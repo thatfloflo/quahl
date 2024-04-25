@@ -31,6 +31,6 @@ something else might be better, feel free to let me know.
 ## Acknowledgments
 
 The default icon set for Quahl is based on [Goran Spasojevic](https://github.com/gorango)'s
-[Glyphs](https://glyphs.fyi/). For more on the icons see the [index of icons](./quahl/browser/resources/index_of_icons.html).
+[Glyphs](https://glyphs.fyi/). For more on the icons see the [index of icons](https://html-preview.github.io/?url=https://github.com/thatfloflo/quahl/blob/main/quahl/browser/resources/index_of_icons.html).
 
 Some inspiration (but no code or resources) has been taken from Qt's [WebEngine Widgets Simple Browser Example](https://doc.qt.io/qt-6/qtwebengine-webenginewidgets-simplebrowser-example.html).
