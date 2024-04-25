@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="80"
+   height="80"
+   viewBox="0 0 80 80"
+   fill="none"
+   version="1.1"
+   id="svg5762"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs5766" />
+  <path
+     d="M 56.3735,64.4145 60.9482,20.4973 C 60.9759,20.2314 60.7673,20 60.5,20 h -41 c -0.2673,0 -0.4759,0.2314 -0.4482,0.4973 l 4.5747,43.9172 C 23.8388,66.4521 25.5563,68 27.605,68 h 24.79 c 2.0487,0 3.7662,-1.5479 3.9785,-3.5855 z"
+     fill="#C2CCDE"
+     fill-opacity="0.25"
+     id="path5756"
+     style="fill:#c8c8c8;fill-opacity:0.25" />
+  <path
+     d="M 52.1449,19.9986 H 27.8551 l 6.0705,-7.6121 h 12.1488 z"
+     fill="#C2CCDE"
+     fill-opacity="0.25"
+     id="path5758"
+     style="fill:#c8c8c8;fill-opacity:0.25" />
+  <path
+     d="M 56.3735,64.4145 60.9482,20.4973 C 60.9759,20.2314 60.7673,20 60.5,20 h -41 c -0.2673,0 -0.4759,0.2314 -0.4482,0.4973 l 4.5747,43.9172 m 32.747,0 C 56.1612,66.4521 54.4437,68 52.395,68 h -24.79 c -2.0487,0 -3.7662,-1.5479 -3.9785,-3.5855 m 32.747,0 L 61,20 M 23.6265,64.4145 19,20 m 42,0 H 19 m 42,0 h 4 M 19,20 H 15 M 27.8551,19.9986 H 52.1449 L 46.0744,12.3865 H 33.9256 Z"
+     stroke="#C2CCDE"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path5760"
+     style="stroke:#7f7f7f;stroke-opacity:1" />
+</svg>

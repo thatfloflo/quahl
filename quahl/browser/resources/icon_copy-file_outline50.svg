@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="80"
+   height="80"
+   viewBox="0 0 80 80"
+   fill="none"
+   version="1.1"
+   id="svg1395"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1399" />
+  <path
+     d="m 41.73,25.9629 c 0.7403,-0.6958 1.7194,-1.0851 2.7389,-1.0852 l 13.5306,-0.0015 c 2.2094,-2e-4 4.0005,1.7907 4.0005,4 v 33.9999 c 0,2.2092 -1.7909,4 -4,4 H 34 c -2.2091,0 -4,-1.7908 -4,-4 V 39.4459 c 0,-1.0168 0.3871,-1.9938 1.0801,-2.7339"
+     stroke="#C2CCDE"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path1389"
+     style="stroke:#000000;stroke-opacity:0.5;stroke-opacity:0.5;stroke-width:1" />
+  <path
+     d="m 30,54.8758 h -8 c -2.2091,0 -4,-1.7909 -4,-4 V 16.8759 c 0,-2.2094 1.7911,-4.0003 4.0004,-4 l 23.9989,2e-4 c 2.2094,-4e-4 4.0007,1.7906 4.0007,4 v 8.0006"
+     stroke="#C2CCDE"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path1391"
+     style="stroke:#000000;stroke-opacity:0.5;stroke-opacity:0.5;stroke-width:1" />
+  <path
+     d="M 31.1262,36.6605 41.6635,26.0218 c 0.4177,-0.4217 1.1367,-0.1253 1.1367,0.4683 v 7.3078 c 0,2.2091 -1.7909,4 -4,4 h -7.2 c -0.5929,0 -0.8913,-0.7161 -0.474,-1.1374 z"
+     stroke="#C2CCDE"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path1393"
+     style="stroke:#000000;stroke-opacity:0.5;stroke-opacity:0.5;stroke-width:1" />
+</svg>

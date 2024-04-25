@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Quahl Icons Overview</title>
+        <style>
+            body {
+                font-family: sans-serif;
+                padding:2em;
+            }
+            table {
+                border-collapse: collapse;
+            }
+            th, td {
+                font-size: 100%;
+                font-weight: normal;
+                text-align: left;
+                border: 1px solid lightgray;
+                min-width: 4em;
+                padding: 3px;
+            }
+            th {
+                border-bottom-color: gray;
+            }
+            #iconListView img {
+                height: 40px;
+                width: 40px;
+            }
+            #iconListView .icon {
+                text-align: center;
+            }
+            details {
+                margin-bottom: 1em;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Quahl Browser Icon Set</h1>
+        <p>
+            These icons taken from (or based on, or inspired by) Goran Spasojevic&apos;s
+            <em><a href="https://glyphs.fyi">Glyphs</a></em>.
+        </p>
+        <details>
+            <summary>Original <em>Glyphs</em> License: MIT License</summary>
+            <pre>
+MIT License
+
+Copyright (c) 2018
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+            </pre>
+        </details>
+        <table>
+            <thead>
+                <th><code>Icons.<i>Alias</i></code></th>
+                <th>Descriptor</th>
+                <th class="icon">Colour</th>
+                <th class="icon">Grey</th>
+                <th class="icon">Outline</th>
+                <th class="icon">Outline50</th>
+            </thead>
+            <tbody id="iconListView">
+
+            </tbody>
+        </table>
+        <script>
+            const iconList = [
+                ['Download',    'arrow-end-down'],
+                ['OpenExtern',  'arrow-external-diag'],
+                ['OpenIntern',  'arrow-level-diag'],
+                ['',            'arrow-level-up'],
+                ['Back',        'arrow-lg-left'],
+                ['Forward',     'arrow-lg-right'],
+                ['',            'arrow-long-up'],
+                ['Undo',        'arrow-u-turn-left'],
+                ['Redo',        'arrow-u-turn-right'],
+                ['',            'arrow-u-turn-up'],
+                ['Reload',      'arrows-round'],
+                ['Crash',       'car-crash'],
+                ['Cli',         'cli'],
+                ['CliHost',     'cli-laptop'],
+                ['Code',        'code'],
+                ['CodeHost',    'code-laptop'],
+                ['Copy',        'copy'],
+                ['',            'copy-arrow'],
+                ['CopyFile',    'copy-file'],
+                ['CopyLink',    'copy-link'],
+                ['Edit',        'edit'],
+                ['File',        'file'],
+                ['Folder',      'folder'],
+                ['FolderOpen',  'folder-open'],
+                ['Inspect',     'glasses'],
+                ['Link',        'link'],
+                ['Paste',       'paste'],
+                ['Browser',     'quahl'],
+                ['Loop/Repeat', 'repeat'],
+                ['Save',        'save'],
+                ['Cut',         'scissors-open'],
+                ['Controls',    'sliders'],
+                ['Stop',        'stop-hand'],
+                ['',            'times'],
+                ['Delete',      'trash'],
+                ['Unlink',      'unlink'],
+                ['Remove/Clear','x'],
+            ];
+            const iconListView = document.getElementById('iconListView');
+            for(const icon of iconList) {
+                let iconAlias = '';
+                if (icon[0]) {
+                    iconAlias = `Icons.${icon[0]}`;
+                }
+                const iconDesc = icon[1];
+                const iconCol = `icon_${iconDesc}_colour.svg`;
+                const iconGre = `icon_${iconDesc}_grey.svg`;
+                const iconOut = `icon_${iconDesc}_outline.svg`;
+                const iconO50 = `icon_${iconDesc}_outline50.svg`;
+                const row = `
+                <tr>
+                    <td><code>${iconAlias}</code></td>
+                    <td>${iconDesc}</td>
+                    <td class="icon"><img src="${iconCol}"></td>
+                    <td class="icon"><img src="${iconGre}"></td>
+                    <td class="icon"><img src="${iconOut}"></td>
+                    <td class="icon"><img src="${iconO50}"></td>
+                </tr>\n`;
+                iconListView.innerHTML += row;
+            }
+        </script>
+    </body>
+</html>
