@@ -248,7 +248,7 @@ class DownloadManager(QWidget):
         self._profile = profile
         if self.isWindow():
             self.setWindowTitle("Download Manager")
-            self.setWindowIcon(Icons.Download)
+            self.setWindowIcon(Icons.Downloads)
             self.resize(380, 450)
         else:
             self.setMinimumWidth(250)

@@ -145,7 +145,7 @@ class BrowserWindow(QMainWindow):
         self._url_line_edit_action = toolbar.addWidget(self._url_line_edit)
 
         self._action_show_downloads = QAction(self)
-        self._action_show_downloads.setIcon(Icons.Download)
+        self._action_show_downloads.setIcon(Icons.Downloads)
         self._action_show_downloads.setToolTip("Show downloads")
         self._action_show_downloads.triggered.connect(self.browser_app.show_downloads)
         toolbar.addAction(self._action_show_downloads)
