@@ -103,7 +103,7 @@ class BrowserProfile(QWebEngineProfile):
 
     def get_anonymous(self) -> "BrowserProfile":
         if not self._anonymous_profile:
-            name = f"{self.storageName}_Anonymous"
+            name = f"{self.storageName()}_Anonymous"
             settings = copy(self._settings)
             settings.startup_clear_cache = True
             settings.startup_clear_cookies = True

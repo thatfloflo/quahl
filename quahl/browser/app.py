@@ -1,5 +1,6 @@
 from uuid import UUID, uuid4
 
+from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtCore import QObject, Signal, Slot, QPoint, QUrl
 
 from .helpers import connect_once, discard_args
@@ -64,6 +65,7 @@ class BrowserApp(QObject):
             pass
         window = BrowserWindow(self, profile, is_popup=is_popup, uuid=uuid, initial_url=initial_url)
         window.about_to_close.connect(self._remove_window)
+        window.webview.devtools_requested.connect(self._launch_devtools)
         self._windows[uuid] = window
         self.window_created.emit(uuid)
         if self._profile.settings.inherit_window_size and from_window:
@@ -90,6 +92,38 @@ class BrowserApp(QObject):
         if background:
             window.lower()
         return window
+
+    def _find_window_by_page(self, page: QWebEnginePage) -> BrowserWindow | None:
+        for window in self._windows.values():
+            if page is window.webpage:
+                return window
+        return None
+
+    @Slot(QWebEnginePage)
+    def _launch_devtools(self, page: QWebEnginePage):
+        # Make sure we only have one devtools page per inspected page
+        existing = page.devToolsPage()
+        if existing:
+            # Focus the existing dev tools window or remove the devtools page
+            window = self._find_window_by_page(existing)
+            if window:
+                window.show()
+                if window.isMinimized():
+                    window.showNormal()
+                window.activateWindow()
+            else:
+                page.setDevToolsPage(None)
+                self._launch_devtools(page)
+            return
+        window = self.create_window(
+            profile=self._profile.get_anonymous(),
+            show=True,
+            from_window=self._find_window_by_page(page),
+            is_popup=True
+        )
+        page.setDevToolsPage(window.webpage)
+        window.update_icon(Icons.CliHost)
+        window._navigation_bar.setVisible(False)
 
     def _check_windows_remaining(self) -> int:
         c = len(self._windows)

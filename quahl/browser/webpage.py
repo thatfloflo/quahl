@@ -15,7 +15,8 @@ class WebPage(QWebEnginePage):
 
     @Slot(int)
     def on_render_process_pid_change(self, pid: int):
-        print("Render process PID changed to", pid)
+        # print("Render process PID changed to", pid)
+        ...
 
     @Slot(QWebEnginePage.RenderProcessTerminationStatus, int)
     def on_render_process_terminated(

@@ -1,6 +1,6 @@
 from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QObject, Signal, Slot
+from PySide6.QtCore import Qt, QObject, Signal, Slot
 from PySide6.QtGui import QAction, QContextMenuEvent
 
 from typing import Self, TYPE_CHECKING
@@ -36,7 +36,8 @@ class WebView(QWebEngineView):
                 menu.addSeparator()
             menu.addAction(webactions[QWebEnginePage.InspectElement])
             webactions[QWebEnginePage.InspectElement].triggered.connect(
-                self._emit_devtools_requested
+                self._emit_devtools_requested,
+                Qt.UniqueConnection
             )
         menu.popup(event.globalPos())
 
@@ -98,7 +99,7 @@ class WebView(QWebEngineView):
         webactions[QWebEnginePage.DownloadLinkToDisk].setIcon(OutlineIcons.Save)
         webactions[QWebEnginePage.DownloadImageToDisk].setIcon(OutlineIcons.Save)
         webactions[QWebEnginePage.DownloadMediaToDisk].setIcon(OutlineIcons.Save)
-        webactions[QWebEnginePage.InspectElement].setIcon(OutlineIcons.Inspect)
+        webactions[QWebEnginePage.InspectElement].setIcon(OutlineIcons.Cli)
         webactions[QWebEnginePage.SavePage].setIcon(OutlineIcons.Save)
         webactions[QWebEnginePage.ViewSource].setIcon(OutlineIcons.Code)
 
@@ -108,14 +109,12 @@ class WebView(QWebEngineView):
             return None
 
         if type == QWebEnginePage.WebBrowserTab:
-            print("New Tab requested")
             return main_window.browser_app.create_window(
                 show=True,
                 from_window=self.window()
             ).webview
 
         if type == QWebEnginePage.WebBrowserBackgroundTab:
-            print("New Background Tab requested")
             return main_window.browser_app.create_window(
                 show=True,
                 background=True,
@@ -123,14 +122,12 @@ class WebView(QWebEngineView):
             ).webview
 
         if type == QWebEnginePage.WebBrowserWindow:
-            print("New Window requested")
             return main_window.browser_app.create_window(
                 show=True,
                 from_window=self.window()
             ).webview
 
         if type == QWebEnginePage.WebDialog:
-            print("New Dialog requested")
             return main_window.browser_app.create_window(
                 show=True,
                 from_window=self.window(),

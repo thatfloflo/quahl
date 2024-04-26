@@ -199,6 +199,7 @@ class BrowserWindow(QMainWindow):
         stop_action.changed.connect(self._web_action_stop_reload_changed)
         reload_action = self._webpage.action(QWebEnginePage.Reload)
         reload_action.changed.connect(self._web_action_stop_reload_changed)
+        # self._webview.devtools_requested.connect(self._launch_devtools)
 
     def _connect_downloads(self):
         self._profile.downloadRequested.connect(
@@ -304,10 +305,13 @@ class BrowserWindow(QMainWindow):
 
     @Slot()
     def update_icon(self, icon: QIcon):
+        url_str = self._webpage.url().toDisplayString()
+        if url_str.startswith("view-source:"):
+            icon = Icons.CodeHost
+        elif url_str.startswith("devtools://"):
+            icon = Icons.CliHost
         if icon.isNull():
             icon = self._browser_app.default_icon
-        elif self._webpage.url().toDisplayString().startswith("view-source:"):
-            icon = Icons.CodeHost
         self.setWindowIcon(icon)
 
     @Slot()
