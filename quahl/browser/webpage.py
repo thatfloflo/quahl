@@ -1,8 +1,9 @@
-from PySide6.QtWebEngineCore import QWebEnginePage
+from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineCertificateError
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QObject, Slot
 
 from .profile import BrowserProfile
+from .certificateerrordialog import CertificateErrorDialog
 from .resources import Icons
 
 
@@ -12,6 +13,22 @@ class WebPage(QWebEnginePage):
         super().__init__(profile, parent)
         self.renderProcessPidChanged.connect(self.on_render_process_pid_change)
         self.renderProcessTerminated.connect(self.on_render_process_terminated)
+        self.certificateError.connect(self._handle_certificate_error)
+
+    @Slot(QWebEngineCertificateError)
+    def _handle_certificate_error(self, error: QWebEngineCertificateError):
+        if not error.isOverridable():
+            error.rejectCertificate()
+            return
+        error.defer()
+        print("SSL ERROR:", error.description())
+        dialog = CertificateErrorDialog(error, self.parent())
+        decision = dialog.exec()
+        print("Received decision:", decision)
+        if decision:
+            error.acceptCertificate()
+        else:
+            error.rejectCertificate()
 
     @Slot(int)
     def on_render_process_pid_change(self, pid: int):
