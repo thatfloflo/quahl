@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QCoreApplication, QUrl
 
 from .browser.app import BrowserApp
+from .ipc import Server
 
 if __name__ == "__main__":
     # Workaround for Windows not recognising window icons on task bar
@@ -19,4 +20,6 @@ if __name__ == "__main__":
     app = QApplication(["--webEngineArgs"])
     browser = BrowserApp()
     window = browser.create_window(show=True, initial_url=QUrl("http://www.google.com/"))
+    server = Server()
+    server.run()
     sys.exit(app.exec())
