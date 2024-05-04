@@ -7,7 +7,7 @@ from .helpers import connect_once, discard_args
 from .profile import BrowserProfile
 from .window import BrowserWindow
 from .resources import Icons
-from .downloadmanager import DownloadManager
+from .downloadmanager import DownloadManagerWindow
 
 
 class BrowserApp(QObject):
@@ -18,7 +18,7 @@ class BrowserApp(QObject):
     all_windows_removed: Signal = Signal()
 
     _windows: dict[UUID, BrowserWindow] = {}
-    _download_manager: DownloadManager
+    _download_manager: DownloadManagerWindow
     _profile: BrowserProfile
 
     default_icon = Icons.Browser
@@ -28,7 +28,7 @@ class BrowserApp(QObject):
         self._profile = profile if profile else BrowserProfile()
         connect_once(self.window_created, discard_args(self._profile.trigger_startup_actions))
         self.all_windows_removed.connect(self._profile.trigger_shutdown_actions)
-        self._download_manager = DownloadManager(self._profile)
+        self._download_manager = DownloadManagerWindow(self._profile)
 
     @property
     def profile(self) -> BrowserProfile:
@@ -41,7 +41,7 @@ class BrowserApp(QObject):
         return self._windows
 
     @property
-    def download_manager(self) -> DownloadManager:
+    def download_manager(self) -> DownloadManagerWindow:
         """Return the `DownloadManager` instance associated with this `BrowserApp` instance."""
         return self._download_manager
 
@@ -98,6 +98,11 @@ class BrowserApp(QObject):
             if page is window.webpage:
                 return window
         return None
+
+    @Slot()
+    def close_all_windows(self):
+        for window in self._windows.copy().values():
+            window.close()
 
     @Slot(QWebEnginePage)
     def _launch_devtools(self, page: QWebEnginePage):
@@ -159,3 +164,8 @@ class BrowserApp(QObject):
         if self._download_manager.isMinimized():
             self._download_manager.showNormal()
         self._download_manager.activateWindow()
+
+    @Slot()
+    def quit(self):
+        print("Quit action invoked on Browser App. Bye!!!")
+        qApp.quit()

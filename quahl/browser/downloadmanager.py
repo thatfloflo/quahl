@@ -4,12 +4,12 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QToolBar, QProgressBar, QScrollArea
 )
 from PySide6.QtCore import Qt, Slot, Signal, QFileInfo
-from PySide6.QtGui import QAction, QIcon
-from PySide6.QtWidgets import QFileIconProvider, QSizePolicy
+from PySide6.QtGui import QAction, QIcon, QKeySequence
+from PySide6.QtWidgets import QFileIconProvider, QSizePolicy, QMainWindow
 from PySide6.QtWebEngineCore import QWebEngineDownloadRequest, QWebEngineProfile
 
 from .resources import Icons, OutlineIcons
-from .helpers import show_in_file_manager, squish_string
+from .helpers import show_in_file_manager, squish_string, OS
 
 
 class DownloadCard(QFrame):
@@ -39,7 +39,42 @@ class DownloadCard(QFrame):
         self._filename = download.downloadFileName()
         self._progress = 0
 
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
+        if OS.detected == OS.WINDOWS:
+            self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
+        else:
+            self.setStyleSheet("""
+                DownloadCard {
+                    background-color: palette(base);
+                    border-radius: 5px;
+                }
+                QLabel#FilenameLabel {
+                    font-size: 11pt;
+                }
+                QLabel#StatusLabel {
+                    font-size: 9pt;
+                }
+                QToolBar {
+                    border: 0;
+                    maring: 0;
+                    padding: 0;
+                    background: palette(base);
+                }
+                QToolButton {
+                    margin: 1px;
+                    padding: 1px;
+                    background-color: palette(base);
+                    border: 1px solid palette(base);
+                    border-radius: 3px;
+                }
+                QToolButton:hover {
+                    border-color: palette(midlight);
+                }
+                QToolButton:pressed {
+                    border-color: palette(dark);
+                    background-color: palette(midlight);
+                    border-style: inset;
+                }
+            """)
         self.setMinimumHeight(64)
         self._build_layout()
         self._update_icon()
@@ -108,13 +143,15 @@ class DownloadCard(QFrame):
         self._layout.addLayout(label_layout)
 
         self._filename_label = QLabel(self)
-        self._filename_label.setStyleSheet("font-size: 10pt;")
+        self._filename_label.setObjectName("FilenameLabel")
+        # self._filename_label.setStyleSheet("font-size: 10pt;")
         self._filename_label.setText(squish_string(self._filename, 35))
         self._filename_label.setToolTip(self._filename)
         label_layout.addWidget(self._filename_label)
 
         self._status_label = QLabel(self)
-        self._status_label.setStyleSheet("font-size: 8pt;")
+        self._status_label.setObjectName("StatusLabel")
+        # self._status_label.setStyleSheet("font-size: 8pt;")
         self._status_label.setText("Getting ready...")
         label_layout.addWidget(self._status_label)
 
@@ -234,7 +271,7 @@ class DownloadCard(QFrame):
         self.hide()
 
 
-class DownloadManager(QWidget):
+class DownloadManagerWidget(QWidget):
 
     _download_ids: list[int] = []
     _layout: QVBoxLayout
@@ -246,12 +283,7 @@ class DownloadManager(QWidget):
     def __init__(self, profile: QWebEngineProfile, parent: QWidget | None = None):
         super().__init__(parent)
         self._profile = profile
-        if self.isWindow():
-            self.setWindowTitle("Download Manager")
-            self.setWindowIcon(Icons.Downloads)
-            self.resize(380, 450)
-        else:
-            self.setMinimumWidth(250)
+        self.setMinimumWidth(300)
         self._layout = QVBoxLayout()
         self._layout.setContentsMargins(5, 5, 5, 5)
         self._layout.setSpacing(0)
@@ -285,13 +317,43 @@ class DownloadManager(QWidget):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self._toolbar.addWidget(spacer)
-        self.open_folder_action = QAction(OutlineIcons.Folder, "Open downloads folder", self)
+        self.open_folder_action = QAction(self)
+        self.open_folder_action.setIcon(OutlineIcons.Folder)
+        self.open_folder_action.setIconText("Open Downloads Folder")
+        self.open_folder_action.setIconVisibleInMenu(False)
+        self.open_folder_action.setText("Open Downloads Folder")
+        self.open_folder_action.setToolTip("Open the Downloads folder")
         self.open_folder_action.triggered.connect(self.open_downloads_folder)
         self._toolbar.addAction(self.open_folder_action)
-        self.clear_all_action = QAction(OutlineIcons.Delete, "Clear all", self)
+        self.clear_all_action = QAction(self)
+        self.clear_all_action.setIcon(OutlineIcons.Delete)
+        self.clear_all_action.setIconText("Clear All")
+        self.clear_all_action.setIconVisibleInMenu(False)
+        self.clear_all_action.setText("Clear Download History")
+        self.clear_all_action.setToolTip("Clear the history of downloads")
         self.clear_all_action.triggered.connect(self.clear_all)
         self._toolbar.addAction(self.clear_all_action)
         self._layout.addWidget(self._toolbar, alignment=Qt.AlignBottom)
+
+        self._toolbar.setStyleSheet("""
+            QToolBar {
+                border: 0;
+                background: palette(window);
+            }
+            QToolButton {
+                padding: 3px;
+                border-radius: 3px;
+                border: 1px solid palette(window);
+            }
+            QToolButton:hover {
+                background: palette(midlight);
+                border-style: outset;
+            }
+            QToolButton:pressed {
+                background: palette(dark);
+                border-style: inset;
+            }
+        """)
 
     @Slot()
     def clear_all(self):
@@ -313,7 +375,7 @@ class DownloadManager(QWidget):
     def download_requested(self, download: QWebEngineDownloadRequest):
         self.add_download(download)
 
-    def add_download(self, download: QWebEngineDownloadRequest) -> "DownloadCard":
+    def add_download(self, download: QWebEngineDownloadRequest) -> DownloadCard:
         id = download.id()
         if id in self._download_ids:
             return  # sometimes we get sent the same ID twice...
@@ -352,3 +414,50 @@ class DownloadManager(QWidget):
         card.hide()
         if isinstance(card, DownloadCard):
             card.deleteLater()
+
+
+class DownloadManagerWindow(QMainWindow):
+
+    def __init__(self, profile: QWebEngineProfile, parent: QWidget | None = None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Download Manager")
+        self.setWindowIcon(Icons.Downloads)
+        self.resize(380, 450)
+
+        self._manager = DownloadManagerWidget(profile, parent)
+        self.setCentralWidget(self._manager)
+
+        self._file_menu = self.menuBar().addMenu("&File")
+        self._action_close = QAction()
+        self._action_close.setIcon(QIcon.fromTheme("window-close"))
+        self._action_close.setIconText("Close")
+        self._action_close.setIconVisibleInMenu(False)
+        self._action_close.setShortcut(QKeySequence.Close)
+        self._action_close.setText("Close Do&wnload Manager")
+        self._action_close.setToolTip("Close the Download Manager window")
+        self._action_close.setEnabled(True)
+        self._action_close.triggered.connect(self.close)
+        self._file_menu.addAction(self._action_close)
+        self._file_menu.addSeparator()
+        self._file_menu.addAction(self._manager.open_folder_action)
+        self._file_menu.addAction(self._manager.clear_all_action)
+
+    def clear_all(self):
+        return self._manager.clear_all()
+    
+    def open_downloads_folder(self):
+        return self._manager.open_downloads_folder()
+
+    @Slot(QWebEngineDownloadRequest)
+    def download_requested(self, download: QWebEngineDownloadRequest):
+        self._manager.download_requested(download)
+
+    def add_download(self, download: QWebEngineDownloadRequest) -> DownloadCard:
+        return self._manager.add_download(download)
+
+    def add_card(self, card: QWidget):
+        return self._manager.add_card(card)
+
+    def remove_card(self, card: QWidget | None = None):
+        return self._manager.remove_card(card)

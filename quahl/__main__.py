@@ -17,9 +17,9 @@ if __name__ == "__main__":
     QCoreApplication.setApplicationName("Quahl Browser")
     QCoreApplication.setApplicationVersion("0.0.1")
     QCoreApplication.setOrganizationName("Quahl")
-    app = QApplication(["--webEngineArgs"])
+    app = QApplication(["Quahl", "--webEngineArgs"])
     browser = BrowserApp()
     window = browser.create_window(show=True, initial_url=QUrl("http://www.google.com/"))
-    server = Server()
-    server.run()
+    # server = Server()s
+    # server.run()
     sys.exit(app.exec())

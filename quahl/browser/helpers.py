@@ -2,12 +2,40 @@ from pathlib import Path
 import platform
 import subprocess
 import math
+import enum
 from functools import wraps
-from typing import Callable, Any
+from typing import Callable, Any, Self
 
 from PySide6.QtWidgets import QWidget
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtCore import Signal, Slot, QRect
+
+
+class OS(enum.IntFlag):
+
+    UNKNOWN = enum.auto()
+    WINDOWS = enum.auto()
+    LINUX = enum.auto()
+    MACOS = enum.auto()
+
+    @classmethod
+    def __detect_os(cls):
+        sname = platform.system()
+        if sname == "Windows":
+            cls._detected_os = cls.WINDOWS
+        elif sname == "Linux":
+            cls._detected_os = cls.LINUX
+        elif sname == "Darwin":
+            cls._detected_os = cls.MACOS
+        else:
+            cls._detected_os = cls.UNKNOWN
+
+    @classmethod
+    def detected(cls) -> Self:
+        if not hasattr(cls, "_detected_os"):
+            cls.__detect_os()
+        return cls._detected_os
+
 
 
 class ClickableQWidget(QWidget):
@@ -114,7 +142,7 @@ def show_in_file_manager(path: Path) -> bool:
     if not path.exists():
         return False
     is_file = True if path.is_file() else False
-    if platform.system() == "Windows":
+    if OS.detected() == OS.WINDOWS:
         # Launch explorer.exe
         if is_file:
             path = str(path)
@@ -124,7 +152,7 @@ def show_in_file_manager(path: Path) -> bool:
         else:
             subprocess.run(["explorer", f"{path}\\"])
         return True
-    if platform.system() == "Darwin":
+    if OS.detected() == OS.MACOS:
         if is_file:
             subprocess.run(["open", "-R", str(path)])
         else:
