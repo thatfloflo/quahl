@@ -1,6 +1,6 @@
-from PySide6.QtCore import QObject, Signal, Slot, QTimer, QUrl
+from PySide6.QtCore import Qt, QObject, Signal, Slot, QTimer, QUrl
 from PySide6.QtGui import QFocusEvent
-from PySide6.QtWidgets import QLineEdit
+from PySide6.QtWidgets import QLineEdit, QCompleter
 
 
 class UrlEdit(QLineEdit):
@@ -28,6 +28,18 @@ class UrlEdit(QLineEdit):
         self.returnPressed.connect(self._handle_return_pressed)
         self.textChanged.connect(self._handle_text_changed)
         self.textEdited.connect(self._handle_text_edited)
+
+        url_list = [
+            "https://www.google.com",
+            "https://www.florian.me.uk/",
+            "https://github.com/thatfloflo/quahl/",
+        ]
+        self._completer = QCompleter(url_list, self)
+        self._completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self._completer.setFilterMode(Qt.MatchContains)
+        self.setCompleter(self._completer)
+
+
 
     def focusInEvent(self, event: QFocusEvent):
         if not self._user_editing_in_progress:
