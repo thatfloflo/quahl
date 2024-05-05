@@ -1,9 +1,12 @@
 from pathlib import Path
+import enum
+from typing import Iterable
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QToolBar, QProgressBar, QScrollArea
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QToolBar, QProgressBar, QScrollArea,
+    QMenu
 )
-from PySide6.QtCore import Qt, Slot, Signal, QFileInfo
+from PySide6.QtCore import Qt, Slot, Signal, QFileInfo, QObject
 from PySide6.QtGui import QAction, QIcon, QKeySequence
 from PySide6.QtWidgets import QFileIconProvider, QSizePolicy, QMainWindow
 from PySide6.QtWebEngineCore import QWebEngineDownloadRequest, QWebEngineProfile
@@ -12,32 +15,327 @@ from .resources import Icons, OutlineIcons
 from .helpers import show_in_file_manager, squish_string
 
 
-class DownloadCard(QFrame):
+class DownloadState(enum.IntEnum):
 
-    _download: QWebEngineDownloadRequest | None
-    _filename: str = ""
-    _progress: int = 0
+    REQUESTED = 0
+    IN_PROGRESS = 1
+    COMPLETED = 2
+    CANCELLED = 3
+    INTERRUPTED = 4
+    PAUSED = 5
+
+    def __str__(self) -> str:
+        if self == self.REQUESTED:
+            return "Getting ready…"
+        if self == self.IN_PROGRESS:
+            return "In progress"
+        if self == self.COMPLETED:
+            return "Finished"
+        if self == self.CANCELLED:
+            return "Cancelled"
+        if self == self.INTERRUPTED:
+            return "Interrupted"
+
+    def is_failure(self) -> bool:
+        if self in (self.CANCELLED, self.INTERRUPTED):
+            return True
+        return False
+
+    def is_alive(self) -> bool:
+        if self in (self.REQUESTED, self.IN_PROGRESS, self.PAUSED):
+            return True
+
+
+class DownloadManagerItem(QObject):
+
+    progress_changed: Signal = Signal(QObject)
+    state_changed: Signal = Signal(QObject)
+    path_changed: Signal = Signal(QObject)
+    icon_changed: Signal = Signal(QObject)
+
+    _download: QWebEngineDownloadRequest | None = None
+    _id: int
+    _filename: Path = Path()
+    _path: Path = Path()
+    _progress_percent: int = 0
+    _received_bytes: int = 0
+    _total_bytes: int = 0
+    _state: DownloadState = DownloadState.REQUESTED
     _loading_started: bool = False
     _loading_finished: bool = False
-    _layout = QHBoxLayout
-    _filename_label: QLabel
-    _status_widget: QWidget
-    _status_label: QLabel
-    _progress_bar: QProgressBar
-    _file_icon: QLabel
-    _toolbar: QToolBar
-    show_file_action: QAction
-    abort_action: QAction
-    remove_action: QAction
-    removal_requested: Signal = Signal(QWidget)
-    download_aborted: Signal = Signal()
+    icon: QIcon = Icons.File
 
-    def __init__(self, download: QWebEngineDownloadRequest, parent: QWidget | None):
+    def __init__(self, download: QWebEngineDownloadRequest, parent: QObject | None = None):
         super().__init__(parent)
 
         self._download = download
-        self._filename = download.downloadFileName()
-        self._progress = 0
+        self._id = download.id()
+        self._update_path()
+
+        download.downloadDirectoryChanged.connect(self._update_path)
+        download.downloadFileNameChanged.connect(self._update_path)
+        download.totalBytesChanged.connect(self._update_progress)
+        download.receivedBytesChanged.connect(self._update_progress)
+        download.stateChanged.connect(self._update_progress)
+        download.isPausedChanged.connect(self._update_progress)
+        self._update_progress()
+
+        download.destroyed.connect(self._request_destroyed)
+
+    @property
+    def id(self) -> int:
+        return self._id
+
+    @property
+    def download_request(self) -> QWebEngineDownloadRequest | None:
+        return self._download
+
+    @property
+    def filename(self) -> Path:
+        return self._filename
+
+    @property
+    def path(self) -> Path:
+        return self._path
+
+    @property
+    def progress_percent(self) -> int:
+        return self._progress_percent
+
+    @property
+    def progress_bytes(self) -> tuple[int, int]:
+        return (self._received_bytes, self._total_bytes)
+
+    @property
+    def state(self) -> DownloadState:
+        return self._state
+
+    @Slot()
+    def cancel(self):
+        if self._download:
+            self._download.cancel()
+
+    @Slot()
+    def pause(self):
+        if self._download:
+            self._download.pause()
+
+    @Slot()
+    def resume(self):
+        if self._download:
+            self._download.resume()
+
+    @Slot()
+    def _request_destroyed(self):
+        self._download = None
+
+    @Slot()
+    def _update_path(self):
+        if self._download:
+            filename = Path(self._download.downloadFileName())
+            path = Path(self._download.downloadDirectory()) / filename
+            if (self._filename, self._path) != (filename, path):
+                self._filename = filename
+                self._path = path
+                self.path_changed.emit(self)
+                self._update_icon()
+
+    @Slot()
+    def _update_progress(self):
+        if not self._download:
+            return
+        self._state = DownloadState(self._download.state().value)
+        if self._download.isPaused():
+            self._state = DownloadState.PAUSED
+        if self._state == DownloadState.COMPLETED:
+            return self._set_loading_finished()
+        if self._state == DownloadState.CANCELLED:
+            return self._set_cancelled()
+        if self._state == DownloadState.INTERRUPTED:
+            return self._set_interrupted()
+        if self._state == DownloadState.REQUESTED:
+            return  # Do nothing - remain in "getting ready..." state?
+        # self._state must be DownloadState.IN_PROGRESS or DownloadState.PAUSED:
+        if not self._loading_started:
+            self._set_loading_started()
+        total_bytes = self._download.totalBytes()
+        received_bytes = self._download.receivedBytes()
+        self._set_progress(received_bytes, total_bytes)
+
+    def _update_icon(self):
+        if self._download:
+            file_info = QFileInfo(self._path)
+            provider = QFileIconProvider()
+            icon = provider.icon(file_info)
+            if icon.isNull():
+                icon = Icons.File
+            if self.icon is not icon:
+                self.icon = icon
+                self.icon_changed.emit(self)
+
+    def _set_progress(self, received_bytes: int, total_bytes: int):
+        change_detected: bool = False
+        if (self._received_bytes, self._total_bytes) != (received_bytes, total_bytes):
+            self._total_bytes = received_bytes
+            self._received_bytes = total_bytes
+            change_detected = True
+        progress_percent = 100  # Used if total_bytes == 0, because 0/0 => 100%
+        if total_bytes > 0:
+            progress_percent = (received_bytes / total_bytes) * 100
+        if self._progress_percent != progress_percent:
+            self._progress_percent = progress_percent
+            change_detected = True
+        if change_detected:
+            self.progress_changed.emit(self)
+
+    def _set_loading_started(self):
+        if self._loading_started and not self._loading_finished:
+            return
+        self._loading_started = True
+        self._loading_finished = False
+        self.state_changed.emit(self)
+        self._set_progress(0, self._total_bytes)
+        self._update_icon()
+
+    def _set_loading_finished(self):
+        if self._loading_started and self._loading_finished:
+            return
+        self._loading_started = True
+        self._loading_finished = True
+        self.state_changed.emit(self)
+        self._set_progress(self._total_bytes, self._total_bytes)
+        self._update_icon()
+
+    def _set_cancelled(self):
+        self.state_changed.emit(self)
+
+    def _set_interrupted(self):
+        self.state_changed.emit(self)
+
+
+class DownloadManagerModel(QObject):
+
+    items_inserted: Signal = Signal()
+    items_removed: Signal = Signal()
+
+    _downloads: dict[int, DownloadManagerItem]
+    _handled_download_ids: list[int]
+
+    def __init__(self, parent: QObject | None = None):
+        super().__init__(parent)
+        self._downloads = {}
+        self._handled_download_ids = []
+
+    @Slot(QWebEngineDownloadRequest)
+    def handle_download_request(self, download: QWebEngineDownloadRequest):
+        id = download.id()
+        if id in self._handled_download_ids:
+            return
+        self._rename_if_exists(download)
+        item = DownloadManagerItem(download, self)
+        download.accept()
+        self._handled_download_ids.append(id)
+        self.insert_item(item)
+
+    @Slot(DownloadManagerItem)
+    def insert_item(self, item: DownloadManagerItem) -> bool:
+        if item.id not in self._downloads:
+            self._downloads[item.id] = item
+            self.items_inserted.emit()
+            return True
+        return False
+
+    @Slot(int)
+    @Slot(DownloadManagerItem)
+    def remove_item(self, item_or_id: DownloadManagerItem | int) -> bool:
+        if isinstance(item_or_id, DownloadManagerItem):
+            item_or_id = item_or_id.id
+        if item_or_id in self._downloads:
+            del self._downloads[item_or_id]
+            self.items_removed.emit()
+            return True
+        return False
+
+    @Slot()
+    @Slot(bool)
+    def remove_all(self, dead_only: bool = False):
+        remove: list[int] = []
+        for id in self._downloads:
+            if dead_only and self._downloads[id].state.is_alive():
+                continue
+            remove.append(id)
+        if remove:
+            for id in remove:
+                del self._downloads[id]
+            self.items_removed.emit()
+
+    def _rename_if_exists(self, download: QWebEngineDownloadRequest):
+        suggested = original = Path(download.downloadDirectory()) / download.downloadFileName()
+        if not original.exists():
+            return
+        counter = 2
+        while suggested.exists():
+            suggested = suggested.with_stem(f"{original.stem} ({counter})")
+            counter += 1
+        download.setDownloadFileName(suggested.name)
+
+    def count(self, alive_only: bool = False) -> int:
+        if alive_only:
+            count = 0
+            for download in self._downloads.values():
+                if download.state.is_alive():
+                    count += 1
+            return count
+        return len(self._downloads)
+
+    def get_all(self, alive_only: bool = False) -> dict[int, DownloadManagerItem]:
+        d: dict[int, DownloadManagerItem] = {}
+        for id, item in self._downloads.items():
+            if (not alive_only) or item.state.is_alive():
+                d[id] = item
+        return d
+
+    def get_item(self, id: int) -> DownloadManagerItem | None:
+        if id in self._downloads:
+            return self._downloads[id]
+
+    def get_new_items(
+            self,
+            known_ids: Iterable[int],
+            alive_only: bool = False) -> dict[int, DownloadManagerItem]:
+        d: dict[int, DownloadManagerItem] = {}
+        new_ids = (id for id in self._downloads.keys() if id not in known_ids)
+        for id in new_ids:
+            if (not alive_only) or self._downloads[id].state.is_alive():
+                d[id] = self._downloads[id]
+        return d
+
+    def get_removed_items(self, known_ids: Iterable[int]) -> list[int]:
+        return [id for id in known_ids if id not in self._downloads]
+
+
+class DownloadCard(QFrame):
+
+    action_cancel: QAction
+    action_pause_resume: QAction
+    action_remove: QAction
+    action_show_file: QAction
+
+    _model: DownloadManagerModel
+    _download_id: int
+
+    _file_icon: QLabel
+    _filename_label: QLabel
+    _status_label: QLabel
+    _layout: QHBoxLayout
+    _progress_bar: QProgressBar
+    _toolbar: QToolBar
+
+    def __init__(self, model, download: DownloadManagerItem, parent: QWidget | None):
+        super().__init__(parent)
+
+        self._model = model
+        self._download_id = download.id
 
         self.setStyleSheet("""
             DownloadCard {
@@ -74,55 +372,23 @@ class DownloadCard(QFrame):
         """)
         self.setMinimumHeight(64)
         self._build_layout()
-        self._update_icon()
 
-        download.totalBytesChanged.connect(self._update_download_progress)
-        download.receivedBytesChanged.connect(self._update_download_progress)
-        download.stateChanged.connect(self._update_download_progress)
-        download.isFinishedChanged.connect(self._update_download_progress)
-        self._update_download_progress()
+        download.progress_changed.connect(self._handle_progress_changed)
+        download.state_changed.connect(self._handle_state_changed)
+        download.path_changed.connect(self._handle_path_changed)
+        download.icon_changed.connect(self._handle_icon_changed)
+        self._handle_progress_changed(download)
+        self._handle_state_changed(download)
+        self._handle_path_changed(download)
+        self._handle_icon_changed(download)
 
-        download.destroyed.connect(self._download_request_destroyed)
+    @property
+    def model(self) -> DownloadManagerModel:
+        return self._model
 
-    def _update_icon(self):
-        if self._download:
-            file_info = QFileInfo(self._download.downloadFileName())
-            provider = QFileIconProvider()
-            icon: QIcon = provider.icon(file_info)
-            self._file_icon.setPixmap(icon.pixmap(32))
-            return
-        self._file_icon.setPixmap(Icons.File.pixmap(32))
-
-    @Slot()
-    def _download_request_destroyed(self):
-        self._download = None
-
-    @Slot()
-    def _update_download_progress(self):
-        if not self._download:
-            return
-        state = self._download.state()
-        if state == QWebEngineDownloadRequest.DownloadCompleted:
-            self.set_loading_finished()
-            return
-        if state == QWebEngineDownloadRequest.DownloadCancelled:
-            self.set_download_cancelled()
-            return
-        if state == QWebEngineDownloadRequest.DownloadInterrupted:
-            reason = self._download.interruptReasonString()
-            self.set_download_interrupted(reason)
-            return
-        if state == QWebEngineDownloadRequest.DownloadRequested:
-            # do nothing - leave initial "getting ready..." state
-            return
-        # state must be DownloadInProgress
-        if not self._loading_started:
-            self._loading_started = True
-            self.set_loading_started()
-        total = self._download.totalBytes()
-        received = self._download.receivedBytes()
-        completed = (received / total) * 100 if total > 0 else 100
-        self.set_progress(completed)
+    @property
+    def download_id(self) -> int:
+        return self._download_id
 
     def _build_layout(self):
         self._layout = QHBoxLayout()
@@ -141,19 +407,17 @@ class DownloadCard(QFrame):
 
         self._filename_label = QLabel(self)
         self._filename_label.setObjectName("FilenameLabel")
-        # self._filename_label.setStyleSheet("font-size: 10pt;")
-        self._filename_label.setText(squish_string(self._filename, 35))
-        self._filename_label.setToolTip(self._filename)
+        self._filename_label.setText("")
+        self._filename_label.setToolTip("")
         label_layout.addWidget(self._filename_label)
 
         self._status_label = QLabel(self)
         self._status_label.setObjectName("StatusLabel")
-        # self._status_label.setStyleSheet("font-size: 8pt;")
-        self._status_label.setText("Getting ready...")
+        self._status_label.setText("")
         label_layout.addWidget(self._status_label)
 
         self._progress_bar = QProgressBar(self)
-        self._progress_bar.setValue(self._progress)
+        self._progress_bar.setValue(0)
         self._progress_bar.setMinimum(0)
         self._progress_bar.setMaximum(100)
         self._progress_bar.setTextVisible(False)
@@ -166,133 +430,173 @@ class DownloadCard(QFrame):
         self._toolbar = QToolBar(self)
         self._layout.addWidget(self._toolbar, alignment=Qt.AlignRight)
 
-        self.show_file_action = QAction(OutlineIcons.FolderOpen, "Show in folder", self)
-        self.show_file_action.triggered.connect(self.show_file)
-        self.show_file_action.setVisible(False)
-        self.show_file_action.setEnabled(False)
-        self.show_file_action.setPriority(QAction.LowPriority)
-        self._toolbar.addAction(self.show_file_action)
-        self.remove_action = QAction(OutlineIcons.Remove, "Remove", self)
-        self.remove_action.triggered.connect(self._emit_removal_requested)
-        self.remove_action.setPriority(QAction.HighPriority)
-        self.remove_action.setVisible(False)
-        self.remove_action.setEnabled(False)
-        self._toolbar.addAction(self.remove_action)
-        self.abort_action = QAction(OutlineIcons.Stop, "Cancel Download", self)
-        self.abort_action.triggered.connect(self._cancel_download)
-        self.abort_action.setVisible(True)
-        self.abort_action.setEnabled(True)
-        self._toolbar.addAction(self.abort_action)
-
-    def _cancel_download(self):
-        if not self._download:
-            return
-        self._download.cancel()
-        self.set_download_cancelled()
-        self.download_aborted.emit()
-
-    def _emit_removal_requested(self):
-        self.removal_requested.emit(self)
+        self.action_show_file = QAction(OutlineIcons.FolderOpen, "Show in folder", self)
+        self.action_show_file.triggered.connect(self.show_file)
+        self.action_show_file.setVisible(False)
+        self.action_show_file.setEnabled(False)
+        self.action_show_file.setPriority(QAction.LowPriority)
+        self._toolbar.addAction(self.action_show_file)
+        self.action_remove = QAction(OutlineIcons.Remove, "Remove", self)
+        self.action_remove.triggered.connect(self._request_removal)
+        self.action_remove.setPriority(QAction.HighPriority)
+        self.action_remove.setVisible(False)
+        self.action_remove.setEnabled(False)
+        self.action_pause_resume = QAction(OutlineIcons.Back, "Pause Download", self)
+        self.action_pause_resume.triggered.connect(self._request_toggle_pause)
+        self.action_pause_resume.setVisible(False)
+        self.action_pause_resume.setEnabled(False)
+        self._toolbar.addAction(self.action_pause_resume)
+        self._toolbar.addAction(self.action_remove)
+        self.action_cancel = QAction(OutlineIcons.Stop, "Cancel Download", self)
+        self.action_cancel.triggered.connect(self._request_cancellation)
+        self.action_cancel.setVisible(False)
+        self.action_cancel.setEnabled(False)
+        self._toolbar.addAction(self.action_cancel)
 
     @Slot()
     def show_file(self):
-        if self._download:
-            path = Path(self._download.downloadDirectory()) / self._download.downloadFileName()
-            if path.exists():
-                show_in_file_manager(path)
-                return
-        self.show_file_action.setEnabled(False)
+        download = self._model.get_item(self._download_id)
+        if download and download.path.exists():
+            show_in_file_manager(download.path)
+            return
+        self.action_show_file.setEnabled(False)
 
-    @Slot()
-    def set_download_cancelled(self):
-        self._status_label.setText("<em>Cancelled</em>")
-        self._progress_bar.setVisible(False)
-        self._status_label.setVisible(True)
-        self.abort_action.setVisible(False)
-        self.abort_action.setEnabled(False)
-        self.remove_action.setVisible(True)
-        self.remove_action.setEnabled(True)
+    def _request_removal(self):
+        download = self._model.get_item(self._download_id)
+        if not download.state.is_alive():
+            self._model.remove_item(self._download_id)
+            return
+        self.action_remove.setEnabled(False)
 
-    @Slot()
-    def set_download_interrupted(self, reason: str):
-        self._status_label.setText(f"<em>Download interrupted:</em> {reason}")
-        self._progress_bar.setVisible(False)
-        self._status_label.setVisible(True)
-        self.abort_action.setVisible(False)
-        self.abort_action.setEnabled(False)
-        self.remove_action.setVisible(True)
-        self.remove_action.setEnabled(True)
+    def _request_cancellation(self):
+        download = self._model.get_item(self._download_id)
+        if download:
+            download.cancel()
 
-    @Slot(int)
-    def set_progress(self, progress: int):
-        self._progress = progress
-        self._progress_bar.setValue(progress)
-        if self._progress > 0:
-            self._loading_started = True
-        if self._loading_started and not self._loading_finished:
-            self._status_label.setVisible(False)
-            self._progress_bar.setVisible(True)
-        else:
+    def _request_toggle_pause(self):
+        download = self._model.get_item(self._download_id)
+        if download:
+            if download.state == DownloadState.PAUSED:
+                download.resume()
+            else:
+                download.pause()
+
+    @Slot(QObject)
+    def _handle_progress_changed(self, download: DownloadManagerItem):
+        self._progress_bar.setValue(download.progress_percent)
+
+    @Slot(QObject)
+    def _handle_state_changed(self, download: DownloadManagerItem):
+        state = download.state
+        self._status_label.setText(str(state))
+        if state == DownloadState.REQUESTED:
+            self.action_show_file.setEnabled(False)
+            self.action_show_file.setVisible(False)
+            self.action_remove.setEnabled(False)
+            self.action_remove.setVisible(False)
+            self.action_pause_resume.setEnabled(False)
+            self.action_pause_resume.setVisible(True)
+            self.action_cancel.setEnabled(True)
+            self.action_cancel.setVisible(True)
             self._status_label.setVisible(True)
             self._progress_bar.setVisible(False)
+            return
+        if state == DownloadState.IN_PROGRESS:
+            self.action_show_file.setEnabled(False)
+            self.action_show_file.setVisible(False)
+            self.action_remove.setEnabled(False)
+            self.action_remove.setVisible(False)
+            self.action_pause_resume.setIcon(OutlineIcons.Back)
+            self.action_pause_resume.setIconText("Pause Download")
+            self.action_pause_resume.setText("Pause Download")
+            self.action_pause_resume.setToolTip("Temporarily pause this download")
+            self.action_pause_resume.setEnabled(True)
+            self.action_pause_resume.setVisible(True)
+            self.action_cancel.setEnabled(True)
+            self.action_cancel.setVisible(True)
+            self._status_label.setVisible(False)
+            self._progress_bar.setVisible(True)
+            return
+        if state == DownloadState.PAUSED:
+            self.action_show_file.setEnabled(False)
+            self.action_show_file.setVisible(False)
+            self.action_remove.setEnabled(False)
+            self.action_remove.setVisible(False)
+            self.action_pause_resume.setIcon(OutlineIcons.Forward)
+            self.action_pause_resume.setIconText("Resume Download")
+            self.action_pause_resume.setText("Resume Download")
+            self.action_pause_resume.setToolTip("Resume this download")
+            self.action_pause_resume.setEnabled(True)
+            self.action_pause_resume.setVisible(True)
+            self.action_cancel.setEnabled(True)
+            self.action_cancel.setVisible(True)
+            self._status_label.setVisible(True)
+            self._progress_bar.setVisible(False)
+            return
+        # Must be CANCELLED, INTERRUPTED or COMPLETED
+        self.action_show_file.setEnabled(download.path.exists())
+        self.action_show_file.setVisible(True)
+        self.action_remove.setEnabled(True)
+        self.action_remove.setVisible(True)
+        self.action_pause_resume.setEnabled(False)
+        self.action_pause_resume.setVisible(False)
+        self.action_cancel.setEnabled(False)
+        self.action_cancel.setVisible(False)
+        self._status_label.setVisible(True)
+        self._progress_bar.setVisible(False)
 
-    @Slot()
-    def set_loading_started(self):
-        self._loading_started = True
-        self._loading_finished = False
-        self.abort_action.setVisible(True)
-        self.abort_action.setEnabled(True)
-        self.remove_action.setVisible(False)
-        self.remove_action.setEnabled(False)
-        self.set_progress(0)
-        self._update_icon()
+    @Slot(QObject)
+    def _handle_path_changed(self, download: DownloadManagerItem):
+        self._filename_label.setText(squish_string(str(download.filename), 35))
+        self._filename_label.setToolTip(str(download.filename))
 
-    @Slot()
-    def set_loading_finished(self):
-        self._loading_started = True
-        self._loading_finished = True
-        self._status_label.setText("Finished")
-        self.abort_action.setVisible(False)
-        self.abort_action.setEnabled(False)
-        self.remove_action.setVisible(True)
-        self.remove_action.setEnabled(True)
-        self.set_progress(100)
-        if self._download:
-            path = Path(self._download.downloadDirectory()) / self._download.downloadFileName()
-            if path.exists():
-                self.show_file_action.setEnabled(True)
-                self.show_file_action.setVisible(True)
-
-    def closeEvent(self, event):
-        event.ignore()
-        self.hide()
+    @Slot(QObject)
+    def _handle_icon_changed(self, download: DownloadManagerItem):
+        self._file_icon.setPixmap(download.icon.pixmap(32))
 
 
-class DownloadManagerWidget(QWidget):
+class DownloadManagerView(QWidget):
 
-    _download_ids: list[int] = []
+    action_open_folder: QAction
+    action_clear_all: QAction
+    view_updated: Signal = Signal()
+
+    _profile: QWebEngineProfile
+    _model: DownloadManagerModel
+    _download_cards: dict[int, DownloadCard]
+
     _layout: QVBoxLayout
     _header: QLabel
-    _toolbar: QToolBar
     _card_list = QVBoxLayout
-    _active_cards: dict[QWebEngineDownloadRequest, DownloadCard] = dict()
+    _toolbar = QToolBar
 
-    def __init__(self, profile: QWebEngineProfile, parent: QWidget | None = None):
+    def __init__(
+            self,
+            model: DownloadManagerModel,
+            profile: QWebEngineProfile,
+            parent: QWidget | None = None):
         super().__init__(parent)
+        self._download_cards = {}
         self._profile = profile
-        self.setMinimumWidth(300)
+        self.setMinimumWidth(350)
+        self._build_layout()
+
+        self._model = model
+        model.items_inserted.connect(self._handle_items_inserted)
+        model.items_removed.connect(self._handle_items_removed)
+        self._handle_items_inserted()
+
+    def _build_layout(self):
         self._layout = QVBoxLayout()
         self._layout.setContentsMargins(5, 5, 5, 5)
         self._layout.setSpacing(0)
         self.setLayout(self._layout)
+
         self._header = QLabel(self)
         self._header.setMargin(3)
         self._header.setStyleSheet("font-size: 14pt; font-weight: bold;")
         self._header.setText("Downloads")
         self._layout.addWidget(self._header, alignment=Qt.AlignTop)
-
-        self._card_list = QVBoxLayout()
-        self._card_list.setContentsMargins(0, 0, 0, 0)
 
         scroll = QScrollArea(self)
         scroll.setStyleSheet("QScrollArea { background: transparent; }")
@@ -301,35 +605,37 @@ class DownloadManagerWidget(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setMinimumWidth(300)
         scroll.setMinimumHeight(200)
-        # scroll.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        wrapper = QWidget(scroll)
-        scroll.setWidget(wrapper)
+        scroll_wrapper = QWidget(scroll)
+        scroll.setWidget(scroll_wrapper)
         self._layout.addWidget(scroll)
-        wrapper.setLayout(self._card_list)
-        self._card_list.setAlignment(Qt.AlignTop)
 
-        # self._layout.addStretch()
+        self._card_list = QVBoxLayout()
+        self._card_list.setContentsMargins(0, 0, 0, 0)
+        self._card_list.setAlignment(Qt.AlignTop)
+        scroll_wrapper.setLayout(self._card_list)
 
         self._toolbar = QToolBar(self)
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self._toolbar.addWidget(spacer)
-        self.open_folder_action = QAction(self)
-        self.open_folder_action.setIcon(OutlineIcons.Folder)
-        self.open_folder_action.setIconText("Open Downloads Folder")
-        self.open_folder_action.setIconVisibleInMenu(False)
-        self.open_folder_action.setText("Open Downloads Folder")
-        self.open_folder_action.setToolTip("Open the Downloads folder")
-        self.open_folder_action.triggered.connect(self.open_downloads_folder)
-        self._toolbar.addAction(self.open_folder_action)
-        self.clear_all_action = QAction(self)
-        self.clear_all_action.setIcon(OutlineIcons.Delete)
-        self.clear_all_action.setIconText("Clear All")
-        self.clear_all_action.setIconVisibleInMenu(False)
-        self.clear_all_action.setText("Clear Download History")
-        self.clear_all_action.setToolTip("Clear the history of downloads")
-        self.clear_all_action.triggered.connect(self.clear_all)
-        self._toolbar.addAction(self.clear_all_action)
+
+        self.action_open_folder = QAction(self)
+        self.action_open_folder.setIcon(OutlineIcons.Folder)
+        self.action_open_folder.setIconText("Open Downloads Folder")
+        self.action_open_folder.setIconVisibleInMenu(False)
+        self.action_open_folder.setText("Open Downloads Folder")
+        self.action_open_folder.setToolTip("Open the Downloads folder")
+        self.action_open_folder.triggered.connect(self.open_downloads_folder)
+        self._toolbar.addAction(self.action_open_folder)
+
+        self.action_clear_all = QAction(self)
+        self.action_clear_all.setIcon(OutlineIcons.Delete)
+        self.action_clear_all.setIconText("Clear All")
+        self.action_clear_all.setIconVisibleInMenu(False)
+        self.action_clear_all.setText("Clear Download History")
+        self.action_clear_all.setToolTip("Remove all completed downloads from the history")
+        self.action_clear_all.triggered.connect(self.clear_all)
+        self._toolbar.addAction(self.action_clear_all)
         self._layout.addWidget(self._toolbar, alignment=Qt.AlignBottom)
 
         self._toolbar.setStyleSheet("""
@@ -352,109 +658,111 @@ class DownloadManagerWidget(QWidget):
             }
         """)
 
-    @Slot()
-    def clear_all(self):
-        removal_list: list[DownloadCard] = []
-        for i in range(0, self._card_list.count()):
-            layout_item = self._card_list.itemAt(i)
-            widget = layout_item.widget()
-            if isinstance(widget, DownloadCard) and widget.remove_action.isEnabled():
-                removal_list.append(widget)
-        for card in removal_list:
-            card.remove_action.trigger()
+    @property
+    def profile(self) -> QWebEngineProfile:
+        return self._profile
+
+    @property
+    def model(self) -> DownloadManagerModel:
+        return self._model
+
+    @property
+    def header(self) -> QLabel:
+        return self._header
 
     @Slot()
     def open_downloads_folder(self):
         path = Path(self._profile.downloadPath())
         show_in_file_manager(path)
 
-    @Slot(QWebEngineDownloadRequest)
-    def download_requested(self, download: QWebEngineDownloadRequest):
-        self.add_download(download)
+    @Slot()
+    def clear_all(self):
+        remove: list[DownloadCard] = []
+        for card in self._download_cards.values():
+            if card.action_remove.isEnabled():
+                remove.append(card)
+        for card in remove:
+            card.action_remove.trigger()
 
-    def add_download(self, download: QWebEngineDownloadRequest) -> DownloadCard:
-        id = download.id()
-        if id in self._download_ids:
-            return  # sometimes we get sent the same ID twice...
-        self._rename_file_if_duplicate(download)
-        card = DownloadCard(download, self)
-        self.add_card(card)
-        download.accept()
-        self._download_ids.append(id)
-        return card
-
-    def _rename_file_if_duplicate(self, download: QWebEngineDownloadRequest):
-        suggested = original = Path(download.downloadDirectory()) / download.downloadFileName()
-        if not original.exists():
-            return
-        counter = 2
-        while suggested.exists():
-            suggested = suggested.with_stem(f"{original.stem} ({counter})")
-            counter += 1
-        download.setDownloadFileName(suggested.name)
-
-    @Slot(QWidget)
-    def add_card(self, card: QWidget):
-        if isinstance(card, DownloadCard):
-            card.removal_requested.connect(self.remove_card)
+    @Slot(DownloadCard)
+    def _insert_card(self, card: DownloadCard):
+        self._download_cards[card.download_id] = card
         self._card_list.insertWidget(0, card)
         card.setFocus()
+        self.view_updated.emit()
+
+    @Slot(DownloadCard)
+    def _remove_card(self, card: DownloadCard):
+        download_id = card.download_id
+        self._card_list.removeWidget(card)
+        card.deleteLater()
+        del self._download_cards[download_id]
+        self.view_updated.emit()
 
     @Slot()
-    @Slot(QWidget)
-    def remove_card(self, card: QWidget | None = None):
-        if card is None:
-            card = self.sender()
-            if not isinstance(card, QWidget):
-                return
-        self._card_list.removeWidget(card)
-        card.hide()
-        if isinstance(card, DownloadCard):
-            card.deleteLater()
+    def _handle_items_inserted(self):
+        known_ids = self._download_cards.keys()
+        new_items = self._model.get_new_items(known_ids)
+        for download in new_items.values():
+            card = DownloadCard(self._model, download, self)
+            self._insert_card(card)
+
+    @Slot()
+    def _handle_items_removed(self):
+        current_ids = self._download_cards.keys()
+        removed_ids = self._model.get_removed_items(current_ids)
+        for download_id in removed_ids:
+            self._remove_card(self._download_cards[download_id])
 
 
 class DownloadManagerWindow(QMainWindow):
 
-    def __init__(self, profile: QWebEngineProfile, parent: QWidget | None = None):
+    action_close: QAction
+
+    _model: DownloadManagerModel
+    _profile: QWebEngineProfile
+
+    _view: DownloadManagerView
+    _file_menu: QMenu
+
+    def __init__(
+            self,
+            model: DownloadManagerModel,
+            profile: QWebEngineProfile,
+            parent: QWidget | None = None):
         super().__init__(parent)
 
+        self._model = model
+        self._profile = profile
+        self._build_layout()
+
+    def _build_layout(self):
         self.setWindowTitle("Download Manager")
         self.setWindowIcon(Icons.Downloads)
-        self.resize(380, 450)
+        self.resize(400, 450)
 
-        self._manager = DownloadManagerWidget(profile, parent)
-        self.setCentralWidget(self._manager)
+        self._view = DownloadManagerView(self._model, self._profile, self)
+        self.setCentralWidget(self._view)
 
         self._file_menu = self.menuBar().addMenu("&File")
-        self._action_close = QAction()
-        self._action_close.setIcon(QIcon.fromTheme("window-close"))
-        self._action_close.setIconText("Close")
-        self._action_close.setIconVisibleInMenu(False)
-        self._action_close.setShortcut(QKeySequence.Close)
-        self._action_close.setText("Close Do&wnload Manager")
-        self._action_close.setToolTip("Close the Download Manager window")
-        self._action_close.setEnabled(True)
-        self._action_close.triggered.connect(self.close)
-        self._file_menu.addAction(self._action_close)
+        self._file_menu.addAction(self._view.action_open_folder)
+        self._file_menu.addAction(self._view.action_clear_all)
         self._file_menu.addSeparator()
-        self._file_menu.addAction(self._manager.open_folder_action)
-        self._file_menu.addAction(self._manager.clear_all_action)
+        self.action_close = QAction()
+        self.action_close.setIcon(QIcon.fromTheme("window-close"))
+        self.action_close.setIconText("Close")
+        self.action_close.setIconVisibleInMenu(False)
+        self.action_close.setShortcut(QKeySequence.Close)
+        self.action_close.setText("Close Do&wnload Manager")
+        self.action_close.setToolTip("Close the Download Manager window")
+        self.action_close.setEnabled(True)
+        self.action_close.triggered.connect(self.close)
+        self._file_menu.addAction(self.action_close)
 
-    def clear_all(self):
-        return self._manager.clear_all()
-    
-    def open_downloads_folder(self):
-        return self._manager.open_downloads_folder()
+    @property
+    def model(self) -> DownloadManagerModel:
+        return self._model
 
-    @Slot(QWebEngineDownloadRequest)
-    def download_requested(self, download: QWebEngineDownloadRequest):
-        self._manager.download_requested(download)
-
-    def add_download(self, download: QWebEngineDownloadRequest) -> DownloadCard:
-        return self._manager.add_download(download)
-
-    def add_card(self, card: QWidget):
-        return self._manager.add_card(card)
-
-    def remove_card(self, card: QWidget | None = None):
-        return self._manager.remove_card(card)
+    @property
+    def profile(self) -> QWebEngineProfile:
+        return self._profile

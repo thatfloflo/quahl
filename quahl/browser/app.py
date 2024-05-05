@@ -1,4 +1,5 @@
 from uuid import UUID, uuid4
+from typing import TYPE_CHECKING
 
 from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtCore import QObject, Signal, Slot, QPoint, QUrl
@@ -7,7 +8,10 @@ from .helpers import connect_once, discard_args
 from .profile import BrowserProfile
 from .window import BrowserWindow
 from .resources import Icons
-from .downloadmanager import DownloadManagerWindow
+from .downloadmanager import DownloadManagerModel, DownloadManagerWindow
+
+if TYPE_CHECKING:
+    qApp = object()
 
 
 class BrowserApp(QObject):
@@ -18,7 +22,8 @@ class BrowserApp(QObject):
     all_windows_removed: Signal = Signal()
 
     _windows: dict[UUID, BrowserWindow] = {}
-    _download_manager: DownloadManagerWindow
+    _download_manager_model: DownloadManagerModel
+    _download_manager_window: DownloadManagerWindow
     _profile: BrowserProfile
 
     default_icon = Icons.Browser
@@ -28,7 +33,11 @@ class BrowserApp(QObject):
         self._profile = profile if profile else BrowserProfile()
         connect_once(self.window_created, discard_args(self._profile.trigger_startup_actions))
         self.all_windows_removed.connect(self._profile.trigger_shutdown_actions)
-        self._download_manager = DownloadManagerWindow(self._profile)
+        self._download_manager_model = DownloadManagerModel()
+        self._download_manager_window = DownloadManagerWindow(
+            self._download_manager_model,
+            self._profile
+        )
 
     @property
     def profile(self) -> BrowserProfile:
@@ -41,9 +50,14 @@ class BrowserApp(QObject):
         return self._windows
 
     @property
-    def download_manager(self) -> DownloadManagerWindow:
-        """Return the `DownloadManager` instance associated with this `BrowserApp` instance."""
-        return self._download_manager
+    def download_manager_model(self) -> DownloadManagerModel:
+        """Return the `DownloadManagerModel` associated with this `BrowserApp` instance."""
+        return self._download_manager_model
+
+    @property
+    def download_manager_window(self) -> DownloadManagerWindow:
+        """Return the `DownloadManagerWindow` associated with this `BrowserApp` instance."""
+        return self._download_manager_window
 
     def create_window(
             self,
@@ -160,10 +174,11 @@ class BrowserApp(QObject):
     @Slot()
     def show_downloads(self):
         """Show the download manager window."""
-        self._download_manager.show()
-        if self._download_manager.isMinimized():
-            self._download_manager.showNormal()
-        self._download_manager.activateWindow()
+        self._download_manager_window.show()
+        if self._download_manager_window.isMinimized():
+            self._download_manager_window.showNormal()
+        self._download_manager_window.raise_()
+        self._download_manager_window.activateWindow()
 
     @Slot()
     def quit(self):

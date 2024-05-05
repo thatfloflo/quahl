@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING
 from functools import partial
 
 from PySide6.QtGui import QAction, QKeySequence, QIcon
-from PySide6.QtCore import Qt, Signal, Slot, QEvent, QUrl, QTimer
+from PySide6.QtCore import Signal, Slot, QEvent, QUrl, QTimer
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QToolBar, QSizePolicy, QProgressBar,
+    QMainWindow, QWidget, QVBoxLayout, QToolBar, QProgressBar,
 )
 from PySide6.QtWebEngineCore import QWebEnginePage
 
@@ -116,7 +116,9 @@ class BrowserWindow(QMainWindow):
         self._action_new.setText("&New Window")
         self._action_new.setToolTip("Open a new window")
         self._action_new.setEnabled(True)
-        self._action_new.triggered.connect(partial(self.browser_app.create_window, show=True, from_window=self))
+        self._action_new.triggered.connect(
+            partial(self.browser_app.create_window, show=True, from_window=self)
+        )
 
         self._action_close = QAction()
         self._action_close.setIcon(QIcon.fromTheme("window-close"))
@@ -196,13 +198,13 @@ class BrowserWindow(QMainWindow):
 
     def _build_menu_bar(self):
         """Build the `BrowserWindow`'s menu bar."""
-        file_menu  = self.menuBar().addMenu("&File")
+        file_menu = self.menuBar().addMenu("&File")
         file_menu.addAction(self._action_new)
         file_menu.addAction(self._action_close)
         file_menu.addAction(self._action_close_all)
         file_menu.addSeparator()
         file_menu.addAction(self._action_quit)
-        
+
         nav_menu = self.menuBar().addMenu("&Navigation")
         nav_menu.addAction(self._action_history_back)
         nav_menu.addAction(self._action_history_forward)
@@ -212,7 +214,6 @@ class BrowserWindow(QMainWindow):
         view_menu = self.menuBar().addMenu("&View")
         view_menu.addAction(self._action_show_downloads)
         view_menu.addSeparator()
-
 
     def _build_navigation_bar(self):
         """Build the `BrowserWindow`'s navigation bar."""
@@ -283,7 +284,7 @@ class BrowserWindow(QMainWindow):
 
     def _connect_downloads(self):
         self._profile.downloadRequested.connect(
-            self._browser_app.download_manager.download_requested
+            self._browser_app.download_manager_model.handle_download_request
         )
         self._profile.downloadRequested.connect(
             discard_args(self._browser_app.show_downloads)
