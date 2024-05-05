@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction, QIcon, QResizeEvent
 
 from .resources import Icons, OutlineIcons
-from .helpers import ClickableQWidget
+from .helpers import ClickableQWidget, OS
 
 
 class NotificationCard(QFrame):
@@ -23,7 +23,38 @@ class NotificationCard(QFrame):
         self.setMinimumSize(395, 60)
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
         self.setContentsMargins(0, 0, 0, 0)
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
+
+        if OS.detected() == OS.WINDOWS:
+            self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
+        else:
+            self.setStyleSheet("""
+                NotificationCard {
+                    background-color: palette(base);
+                    border-radius: 5px;
+                    border: 1px solid palette(midlight);
+                }
+                QToolBar {
+                    border: 0;
+                    margin: 0;
+                    padding: 0;
+                    background: palette(base);
+                }
+                QToolButton {
+                    margin: 1px;
+                    padding: 1px;
+                    background-color: palette(base);
+                    border: 1px solid palette(base);
+                    border-radius: 3px;
+                }
+                QToolButton:hover {
+                    border-color: palette(midlight);
+                }
+                QToolButton:pressed {
+                    border-color: palette(dark);
+                    background-color: palette(midlight);
+                    border-style: inset;
+                }
+            """)
 
         self._layout = QHBoxLayout()
         self._layout.setContentsMargins(5, 5, 5, 5)
@@ -129,10 +160,10 @@ class NotificationOverlay(QWidget):
         self._reposition()
 
     def _run_demo(self):
-        demo_card1 = NotificationCard(Icons.File, "Demo notification 1...", self)
+        demo_card1 = NotificationCard(Icons.Information, "Demo notification 1...", self)
         demo_card2 = NotificationCard(Icons.Browser, "Second demo notification...", self)
-        demo_card3 = NotificationCard(Icons.Inspect, "3rd demo notifiication...", self)
-        demo_card4 = NotificationCard(Icons.CliHost, "Fourth and final demo notification!", self)
+        demo_card3 = NotificationCard(Icons.Question, "3rd demo notifiication...", self)
+        demo_card4 = NotificationCard(Icons.Warning, "Fourth and final demo notification!", self)
         demo_card4.hide()
         self.add_card(demo_card1)
         QTimer.singleShot(1_000, self, lambda: self.add_card(demo_card2))

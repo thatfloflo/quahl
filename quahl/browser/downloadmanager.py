@@ -55,7 +55,7 @@ class DownloadCard(QFrame):
                 }
                 QToolBar {
                     border: 0;
-                    maring: 0;
+                    margin: 0;
                     padding: 0;
                     background: palette(base);
                 }
