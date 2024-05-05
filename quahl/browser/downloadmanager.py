@@ -7,8 +7,8 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QToolBar, QProgressBar, QScrollArea,
     QMenu
 )
-from PySide6.QtCore import Qt, Slot, Signal, QFileInfo, QObject
-from PySide6.QtGui import QAction, QIcon, QKeySequence
+from PySide6.QtCore import Qt, Slot, Signal, QFileInfo, QObject, QEvent
+from PySide6.QtGui import QAction, QIcon, QKeySequence, QGuiApplication
 from PySide6.QtWidgets import QFileIconProvider, QSizePolicy, QMainWindow
 from PySide6.QtWebEngineCore import QWebEngineDownloadRequest, QWebEngineProfile
 
@@ -399,6 +399,8 @@ class DownloadCard(QFrame):
                 border-style: inset;
             }
         """)
+        style_hints = QGuiApplication.styleHints()
+        style_hints.colorSchemeChanged.connect(self._handle_color_scheme_changed)
         self.setMinimumHeight(64)
         self._build_layout()
 
@@ -589,6 +591,10 @@ class DownloadCard(QFrame):
     def _handle_icon_changed(self, download: DownloadManagerItem):
         self._file_icon.setPixmap(download.icon.pixmap(32))
 
+    @Slot()
+    def _handle_color_scheme_changed(self):
+        self.setStyleSheet(self.styleSheet())
+
 
 class DownloadManagerView(QWidget):
 
@@ -673,7 +679,7 @@ class DownloadManagerView(QWidget):
         self._toolbar.addAction(self.action_clear_all)
         self._layout.addWidget(self._toolbar, alignment=Qt.AlignBottom)
 
-        self._toolbar.setStyleSheet("""
+        self.setStyleSheet("""
             QToolBar {
                 border: 0;
                 background: palette(window);
@@ -692,6 +698,8 @@ class DownloadManagerView(QWidget):
                 border-style: inset;
             }
         """)
+        style_hints = QGuiApplication.styleHints()
+        style_hints.colorSchemeChanged.connect(self._handle_color_scheme_changed)
 
     @property
     def profile(self) -> QWebEngineProfile:
@@ -748,6 +756,10 @@ class DownloadManagerView(QWidget):
         removed_ids = self._model.get_removed_items(current_ids)
         for download_id in removed_ids:
             self._remove_card(self._download_cards[download_id])
+
+    @Slot()
+    def _handle_color_scheme_changed(self):
+        self.setStyleSheet(self.styleSheet())
 
 
 class DownloadManagerWindow(QMainWindow):

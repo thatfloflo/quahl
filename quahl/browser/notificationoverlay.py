@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QGraphicsOpacityEffect, QHBoxLayout, QVBoxLayout, QWidget, QFrame, QLabel,
     QSizePolicy, QToolBar
 )
-from PySide6.QtGui import QAction, QIcon, QResizeEvent
+from PySide6.QtGui import QAction, QIcon, QResizeEvent, QGuiApplication
 
 from .resources import Icons, OutlineIcons
 from .helpers import ClickableQWidget
@@ -51,6 +51,8 @@ class NotificationCard(QFrame):
                 border-style: inset;
             }
         """)
+        style_hints = QGuiApplication.styleHints()
+        style_hints.colorSchemeChanged.connect(self._handle_color_scheme_changed)
 
         self._layout = QHBoxLayout()
         self._layout.setContentsMargins(5, 5, 5, 5)
@@ -137,6 +139,10 @@ class NotificationCard(QFrame):
 
     def _emit_removal_requested(self):
         self.removal_requested.emit(self, False)
+
+    @Slot()
+    def _handle_color_scheme_changed(self):
+        self.setStyleSheet(self.styleSheet())
 
 
 class NotificationOverlay(QWidget):

@@ -72,6 +72,7 @@ class BrowserWindow(QMainWindow):
             self.ready.connect(discard_args(partial(self.set_url_clear, initial_url)))
 
         self._notification_overlay = NotificationOverlay(self)
+        self._notification_overlay._run_demo()
 
     def notify(self, icon: QIcon, message: str):
         self._notification_overlay.notify(icon, message)

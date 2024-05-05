@@ -1,7 +1,6 @@
 from PySide6.QtCore import Qt, QObject, Signal, Slot, QTimer, QUrl
-from PySide6.QtGui import QFocusEvent
+from PySide6.QtGui import QFocusEvent, QGuiApplication
 from PySide6.QtWidgets import QLineEdit, QCompleter
-
 
 class UrlEdit(QLineEdit):
 
@@ -25,6 +24,8 @@ class UrlEdit(QLineEdit):
                 border: 3px solid palette(highlight);
             }
         """)
+        style_hints = QGuiApplication.styleHints()
+        style_hints.colorSchemeChanged.connect(self._handle_color_scheme_changed)
         self.returnPressed.connect(self._handle_return_pressed)
         self.textChanged.connect(self._handle_text_changed)
         self.textEdited.connect(self._handle_text_edited)
@@ -39,6 +40,13 @@ class UrlEdit(QLineEdit):
         self._completer.setFilterMode(Qt.MatchContains)
         self.setCompleter(self._completer)
 
+    @Slot()
+    def _handle_color_scheme_changed(self):
+        self.setStyleSheet(self.styleSheet())
+
+    @Slot()
+    def _handle_palette_change2(self):
+        print("Pallette change 2 handler!")
 
 
     def focusInEvent(self, event: QFocusEvent):
@@ -70,4 +78,10 @@ class UrlEdit(QLineEdit):
     def _reset_view(self):
         self._user_editing_in_progress = False
         self.setCursorPosition(0)
+
+    # def changeEvent(self, event: QEvent):
+    #     if event.type() == QEvent.ApplicationPaletteChange:
+    #         print("AppPalChange on UrlLineEdit")
+    #         self.setStyleSheet(self.styleSheet())
+    #     super().changeEvent(event)
         

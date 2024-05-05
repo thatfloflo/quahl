@@ -37,7 +37,6 @@ class OS(enum.IntFlag):
         return cls._detected_os
 
 
-
 class ClickableQWidget(QWidget):
 
     clicked: Signal = Signal(QWidget)
