@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QFileIconProvider, QSizePolicy, QMainWindow
 from PySide6.QtWebEngineCore import QWebEngineDownloadRequest, QWebEngineProfile
 
 from .resources import Icons, OutlineIcons
-from .helpers import show_in_file_manager, squish_string, OS
+from .helpers import show_in_file_manager, squish_string
 
 
 class DownloadCard(QFrame):
@@ -39,42 +39,39 @@ class DownloadCard(QFrame):
         self._filename = download.downloadFileName()
         self._progress = 0
 
-        if OS.detected == OS.WINDOWS:
-            self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
-        else:
-            self.setStyleSheet("""
-                DownloadCard {
-                    background-color: palette(base);
-                    border-radius: 5px;
-                }
-                QLabel#FilenameLabel {
-                    font-size: 11pt;
-                }
-                QLabel#StatusLabel {
-                    font-size: 9pt;
-                }
-                QToolBar {
-                    border: 0;
-                    margin: 0;
-                    padding: 0;
-                    background: palette(base);
-                }
-                QToolButton {
-                    margin: 1px;
-                    padding: 1px;
-                    background-color: palette(base);
-                    border: 1px solid palette(base);
-                    border-radius: 3px;
-                }
-                QToolButton:hover {
-                    border-color: palette(midlight);
-                }
-                QToolButton:pressed {
-                    border-color: palette(dark);
-                    background-color: palette(midlight);
-                    border-style: inset;
-                }
-            """)
+        self.setStyleSheet("""
+            DownloadCard {
+                background-color: palette(base);
+                border-radius: 5px;
+            }
+            QLabel#FilenameLabel {
+                font-size: 11pt;
+            }
+            QLabel#StatusLabel {
+                font-size: 9pt;
+            }
+            QToolBar {
+                border: 0;
+                margin: 0;
+                padding: 0;
+                background: palette(base);
+            }
+            QToolButton {
+                margin: 1px;
+                padding: 1px;
+                background-color: palette(base);
+                border: 1px solid palette(base);
+                border-radius: 3px;
+            }
+            QToolButton:hover {
+                border-color: palette(midlight);
+            }
+            QToolButton:pressed {
+                border-color: palette(dark);
+                background-color: palette(midlight);
+                border-style: inset;
+            }
+        """)
         self.setMinimumHeight(64)
         self._build_layout()
         self._update_icon()

@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction, QIcon, QResizeEvent
 
 from .resources import Icons, OutlineIcons
-from .helpers import ClickableQWidget, OS
+from .helpers import ClickableQWidget
 
 
 class NotificationCard(QFrame):
@@ -23,38 +23,34 @@ class NotificationCard(QFrame):
         self.setMinimumSize(395, 60)
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
         self.setContentsMargins(0, 0, 0, 0)
-
-        if OS.detected() == OS.WINDOWS:
-            self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
-        else:
-            self.setStyleSheet("""
-                NotificationCard {
-                    background-color: palette(base);
-                    border-radius: 5px;
-                    border: 1px solid palette(midlight);
-                }
-                QToolBar {
-                    border: 0;
-                    margin: 0;
-                    padding: 0;
-                    background: palette(base);
-                }
-                QToolButton {
-                    margin: 1px;
-                    padding: 1px;
-                    background-color: palette(base);
-                    border: 1px solid palette(base);
-                    border-radius: 3px;
-                }
-                QToolButton:hover {
-                    border-color: palette(midlight);
-                }
-                QToolButton:pressed {
-                    border-color: palette(dark);
-                    background-color: palette(midlight);
-                    border-style: inset;
-                }
-            """)
+        self.setStyleSheet("""
+            NotificationCard {
+                background-color: palette(base);
+                border-radius: 5px;
+                border: 1px solid palette(midlight);
+            }
+            QToolBar {
+                border: 0;
+                margin: 0;
+                padding: 0;
+                background: palette(base);
+            }
+            QToolButton {
+                margin: 1px;
+                padding: 1px;
+                background-color: palette(base);
+                border: 1px solid palette(base);
+                border-radius: 3px;
+            }
+            QToolButton:hover {
+                border-color: palette(midlight);
+            }
+            QToolButton:pressed {
+                border-color: palette(dark);
+                background-color: palette(midlight);
+                border-style: inset;
+            }
+        """)
 
         self._layout = QHBoxLayout()
         self._layout.setContentsMargins(5, 5, 5, 5)
