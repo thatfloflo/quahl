@@ -1,5 +1,6 @@
 from pathlib import Path
 import enum
+import sys
 from typing import Iterable
 
 from PySide6.QtWidgets import (
@@ -35,6 +36,8 @@ class DownloadState(enum.IntEnum):
             return "Cancelled"
         if self == self.INTERRUPTED:
             return "Interrupted"
+        if self == self.PAUSED:
+            return "Paused"
 
     def is_failure(self) -> bool:
         if self in (self.CANCELLED, self.INTERRUPTED):
@@ -55,19 +58,27 @@ class DownloadManagerItem(QObject):
 
     _download: QWebEngineDownloadRequest | None = None
     _id: int
-    _filename: Path = Path()
-    _path: Path = Path()
-    _progress_percent: int = 0
-    _received_bytes: int = 0
-    _total_bytes: int = 0
-    _state: DownloadState = DownloadState.REQUESTED
-    _loading_started: bool = False
-    _loading_finished: bool = False
+    _filename: Path
+    _path: Path
+    _progress_percent: int
+    _received_bytes: int
+    _total_bytes: int
+    _state: DownloadState
+    _loading_started: bool
+    _loading_finished: bool
     icon: QIcon = Icons.File
 
     def __init__(self, download: QWebEngineDownloadRequest, parent: QObject | None = None):
         super().__init__(parent)
 
+        self._filename = Path()
+        self._path = Path()
+        self._state = DownloadState.REQUESTED
+        self._progress_percent = 0
+        self._received_bytes = 0
+        self._total_bytes = 0
+        self._loading_started = False
+        self._loading_finished = False
         self._download = download
         self._id = download.id()
         self._update_path()
@@ -114,6 +125,7 @@ class DownloadManagerItem(QObject):
     def cancel(self):
         if self._download:
             self._download.cancel()
+            self._update_download_state()
 
     @Slot()
     def pause(self):
@@ -124,6 +136,7 @@ class DownloadManagerItem(QObject):
     def resume(self):
         if self._download:
             self._download.resume()
+            self._update_download_state()
 
     @Slot()
     def _request_destroyed(self):
@@ -144,23 +157,40 @@ class DownloadManagerItem(QObject):
     def _update_progress(self):
         if not self._download:
             return
-        self._state = DownloadState(self._download.state().value)
-        if self._download.isPaused():
-            self._state = DownloadState.PAUSED
+        old_state = self._state
+        self._update_download_state()
         if self._state == DownloadState.COMPLETED:
-            return self._set_loading_finished()
-        if self._state == DownloadState.CANCELLED:
-            return self._set_cancelled()
-        if self._state == DownloadState.INTERRUPTED:
-            return self._set_interrupted()
-        if self._state == DownloadState.REQUESTED:
-            return  # Do nothing - remain in "getting ready..." state?
-        # self._state must be DownloadState.IN_PROGRESS or DownloadState.PAUSED:
-        if not self._loading_started:
-            self._set_loading_started()
-        total_bytes = self._download.totalBytes()
-        received_bytes = self._download.receivedBytes()
-        self._set_progress(received_bytes, total_bytes)
+            self._set_loading_finished()
+        elif self._state == DownloadState.CANCELLED:
+            self._set_cancelled()
+        elif self._state == DownloadState.INTERRUPTED:
+            self._set_interrupted()
+        elif self._state == DownloadState.REQUESTED:
+            pass  # Do nothing - remain in "getting ready..." state?
+        else:  # self._state must be DownloadState.IN_PROGRESS or DownloadState.PAUSED:
+            if not self._loading_started:
+                self._set_loading_started()
+            total_bytes = self._download.totalBytes()
+            received_bytes = self._download.receivedBytes()
+            self._set_progress(received_bytes, total_bytes)
+        if self._state != old_state:
+            self.state_changed.emit(self)
+
+    def _update_download_state(self):
+        if self._download:
+            polled = DownloadState(self._download.state().value)
+            if polled.is_alive() and self._download.isPaused():
+                self._state = DownloadState.PAUSED
+            else:
+                self._state = polled
+        elif self.state.is_alive():
+            # A destroyed download certainly shouldn't be in an alive state!
+            print("ERROR: DownloadManagerItem.state is a live state but the "
+                  "DownloadRequest has been destroyed already.", file=sys.stderr)
+            if self.path.exists():
+                self._state = DownloadState.COMPLETED
+            else:
+                self._state = DownloadState.INTERRUPTED
 
     def _update_icon(self):
         if self._download:
@@ -193,7 +223,6 @@ class DownloadManagerItem(QObject):
             return
         self._loading_started = True
         self._loading_finished = False
-        self.state_changed.emit(self)
         self._set_progress(0, self._total_bytes)
         self._update_icon()
 
@@ -202,15 +231,14 @@ class DownloadManagerItem(QObject):
             return
         self._loading_started = True
         self._loading_finished = True
-        self.state_changed.emit(self)
         self._set_progress(self._total_bytes, self._total_bytes)
         self._update_icon()
 
     def _set_cancelled(self):
-        self.state_changed.emit(self)
+        pass
 
     def _set_interrupted(self):
-        self.state_changed.emit(self)
+        pass
 
 
 class DownloadManagerModel(QObject):
@@ -409,23 +437,29 @@ class DownloadCard(QFrame):
         self._filename_label.setObjectName("FilenameLabel")
         self._filename_label.setText("")
         self._filename_label.setToolTip("")
+        self._filename_label.setSizePolicy(
+            QSizePolicy.MinimumExpanding, QSizePolicy.Preferred
+        )
         label_layout.addWidget(self._filename_label)
 
         self._status_label = QLabel(self)
         self._status_label.setObjectName("StatusLabel")
         self._status_label.setText("")
+        self._status_label.setSizePolicy(
+            QSizePolicy.MinimumExpanding, QSizePolicy.Preferred
+        )
         label_layout.addWidget(self._status_label)
 
         self._progress_bar = QProgressBar(self)
         self._progress_bar.setValue(0)
         self._progress_bar.setMinimum(0)
         self._progress_bar.setMaximum(100)
-        self._progress_bar.setTextVisible(False)
-        self._progress_bar.setMaximumHeight(10)
+        self._progress_bar.setTextVisible(True)
+        self._progress_bar.setSizePolicy(
+            QSizePolicy.MinimumExpanding, QSizePolicy.Preferred
+        )
         label_layout.addWidget(self._progress_bar)
         self._progress_bar.setVisible(False)
-
-        self._layout.addStretch()
 
         self._toolbar = QToolBar(self)
         self._layout.addWidget(self._toolbar, alignment=Qt.AlignRight)
@@ -441,13 +475,13 @@ class DownloadCard(QFrame):
         self.action_remove.setPriority(QAction.HighPriority)
         self.action_remove.setVisible(False)
         self.action_remove.setEnabled(False)
-        self.action_pause_resume = QAction(OutlineIcons.Back, "Pause Download", self)
+        self.action_pause_resume = QAction(OutlineIcons.MediaPause, "Pause Download", self)
         self.action_pause_resume.triggered.connect(self._request_toggle_pause)
         self.action_pause_resume.setVisible(False)
         self.action_pause_resume.setEnabled(False)
         self._toolbar.addAction(self.action_pause_resume)
         self._toolbar.addAction(self.action_remove)
-        self.action_cancel = QAction(OutlineIcons.Stop, "Cancel Download", self)
+        self.action_cancel = QAction(OutlineIcons.MediaStop, "Cancel Download", self)
         self.action_cancel.triggered.connect(self._request_cancellation)
         self.action_cancel.setVisible(False)
         self.action_cancel.setEnabled(False)
@@ -506,7 +540,7 @@ class DownloadCard(QFrame):
             self.action_show_file.setVisible(False)
             self.action_remove.setEnabled(False)
             self.action_remove.setVisible(False)
-            self.action_pause_resume.setIcon(OutlineIcons.Back)
+            self.action_pause_resume.setIcon(OutlineIcons.MediaPause)
             self.action_pause_resume.setIconText("Pause Download")
             self.action_pause_resume.setText("Pause Download")
             self.action_pause_resume.setToolTip("Temporarily pause this download")
@@ -522,7 +556,7 @@ class DownloadCard(QFrame):
             self.action_show_file.setVisible(False)
             self.action_remove.setEnabled(False)
             self.action_remove.setVisible(False)
-            self.action_pause_resume.setIcon(OutlineIcons.Forward)
+            self.action_pause_resume.setIcon(OutlineIcons.MediaPlay)
             self.action_pause_resume.setIconText("Resume Download")
             self.action_pause_resume.setText("Resume Download")
             self.action_pause_resume.setToolTip("Resume this download")
