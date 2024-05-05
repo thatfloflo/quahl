@@ -4,6 +4,8 @@ from typing import Union
 from PySide6.QtWebEngineCore import QWebEngineProfile
 from PySide6.QtCore import QObject, QStandardPaths, Slot
 
+from .helpers import OS
+
 
 class BrowserSettings:
     startup_clear_history: bool = True
@@ -23,6 +25,7 @@ class BrowserSettings:
     default_window_size: tuple[int, int] = (800, 600)
     inherit_window_size: bool = True
     window_stagger: tuple[int, int] = (20, 20)
+    menu_bar_show: bool = (OS.detected() == OS.MACOS)
     navigation_bar_show: bool = True
     navigation_back_show: bool = True
     navigation_forward_show: bool = True

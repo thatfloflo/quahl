@@ -13,7 +13,8 @@ from PySide6.QtWidgets import QFileIconProvider, QSizePolicy, QMainWindow
 from PySide6.QtWebEngineCore import QWebEngineDownloadRequest, QWebEngineProfile
 
 from .resources import Icons, OutlineIcons
-from .helpers import show_in_file_manager, squish_string
+from .profile import BrowserProfile
+from .helpers import show_in_file_manager, squish_string, OS
 
 
 class DownloadState(enum.IntEnum):
@@ -792,6 +793,11 @@ class DownloadManagerWindow(QMainWindow):
         self.action_close.setEnabled(True)
         self.action_close.triggered.connect(self.close)
         self._file_menu.addAction(self.action_close)
+
+        if isinstance(self._profile, BrowserProfile):
+            self.menuBar().setVisible(self._profile.settings.menu_bar_show)
+        else:
+            self.menuBar().setVisible(OS.detected() == OS.MACOS)
 
     @property
     def model(self) -> DownloadManagerModel:

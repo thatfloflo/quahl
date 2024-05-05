@@ -253,6 +253,7 @@ class BrowserWindow(QMainWindow):
         self._webpage.loadFinished.connect(self._progress_bar.reset)
 
     def _configure_ui_elements(self):
+        self.menuBar().setVisible(self._profile.settings.menu_bar_show)
         self._navigation_bar.setVisible(self._profile.settings.navigation_bar_show)
         self._action_history_back.setVisible(self._profile.settings.navigation_back_show)
         self._action_history_forward.setVisible(self._profile.settings.navigation_forward_show)
