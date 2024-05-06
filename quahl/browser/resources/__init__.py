@@ -4,7 +4,10 @@ from typing import Final, List
 from PySide6.QtCore import QSize, Qt, Slot, QRect
 from PySide6.QtGui import QWindow, QIcon, QIconEngine, QGuiApplication, QPixmap, QPainter
 
-NEW_WINDOW_PAGE_HTML: Final[str] = resources.read_text(__package__, "new_window_page.html")
+
+NEW_WINDOW_PAGE_HTML: Final[str] = resources.read_text(
+    f"{__package__}.pages", "new_window_page.html"
+)
 
 
 class ColorSchemeSensitiveIconEngine(QIconEngine):
@@ -128,9 +131,10 @@ class ColorSchemeSensitiveIcon(QIcon):
 
 def load_icon(icon_name: str) -> QIcon:
     icon = QIcon()
-    with resources.path(__package__, f"icon_{icon_name}_colour.svg") as path:
+    icon_package = f"{__package__}.icons.color"
+    with resources.path(icon_package, f"{icon_name}_c.svg") as path:
         icon.addFile(str(path))
-    with resources.path(__package__, f"icon_{icon_name}_grey.svg") as path:
+    with resources.path(icon_package, f"{icon_name}_g.svg") as path:
         icon.addFile(str(path), mode=QIcon.Disabled)
     return icon
 
@@ -138,13 +142,15 @@ def load_icon(icon_name: str) -> QIcon:
 def load_icon_outline(icon_name: str) -> QIcon:
     light = QIcon()
     dark = QIcon()
-    with resources.path(__package__, f"icon_{icon_name}_outline.svg") as path:
+    light_package = f"{__package__}.icons.outline"
+    dark_package = f"{__package__}.icons.darko"
+    with resources.path(light_package, f"{icon_name}_o.svg") as path:
         light.addFile(str(path))
-    with resources.path(__package__, f"icon_{icon_name}_outline_d.svg") as path:
+    with resources.path(dark_package, f"{icon_name}_d.svg") as path:
         dark.addFile(str(path))
-    with resources.path(__package__, f"icon_{icon_name}_outline50.svg") as path:
+    with resources.path(light_package, f"{icon_name}_o50.svg") as path:
         light.addFile(str(path), mode=QIcon.Disabled)
-    with resources.path(__package__, f"icon_{icon_name}_outline50_d.svg") as path:
+    with resources.path(dark_package, f"{icon_name}_d50.svg") as path:
         dark.addFile(str(path), mode=QIcon.Disabled)
     icon = ColorSchemeSensitiveIcon(light, dark)
     return icon
