@@ -1,30 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-   width="80"
-   height="80"
-   viewBox="0 0 80 80"
-   fill="none"
-   version="1.1"
-   id="svg904"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-  <defs
-     id="defs908" />
-  <path
-     d="m 42,52.7591 c 0,1.1046 -0.8954,2 -2,2 -1.1046,0 -2,-0.8954 -2,-2 z M 38,38.0214 c 0,-1.1046 0.8954,-2 2,-2 1.1046,0 2,0.8954 2,2 z M 42,38 c 0,1.1046 -0.8954,2 -2,2 -1.1046,0 -2,-0.8954 -2,-2 z M 38,15 c 0,-1.1045 0.8954,-2 2,-2 1.1046,0 2,0.8955 2,2 z m 0,37.7591 V 38.0214 h 4 V 52.7591 Z M 38,38 V 15 h 4 v 23 z"
-     fill="#56ccf2"
-     id="path898" />
-  <path
-     d="M 56,38.0001 42.1213,51.8788 c -1.1716,1.1716 -3.071,1.1716 -4.2426,0 L 24,38.0001"
-     stroke="#2f80ed"
-     stroke-width="4"
-     stroke-linecap="round"
-     stroke-linejoin="round"
-     id="path900" />
-  <path
-     d="M 24,61.0001 H 56"
-     stroke="#56ccf2"
-     stroke-width="4"
-     stroke-linecap="round"
-     id="path902" />
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" version="1.1" id="svg904" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+	<defs id="defs908" />
+	<path d="m 42,52.7591 c 0,1.1046 -0.8954,2 -2,2 -1.1046,0 -2,-0.8954 -2,-2 z M 38,38.0214 c 0,-1.1046 0.8954,-2 2,-2 1.1046,0 2,0.8954 2,2 z M 42,38 c 0,1.1046 -0.8954,2 -2,2 -1.1046,0 -2,-0.8954 -2,-2 z M 38,15 c 0,-1.1045 0.8954,-2 2,-2 1.1046,0 2,0.8955 2,2 z m 0,37.7591 V 38.0214 h 4 V 52.7591 Z M 38,38 V 15 h 4 v 23 z" style="fill:#56ccf2" id="path898" />
+	<path d="M 56,38.0001 42.1213,51.8788 c -1.1716,1.1716 -3.071,1.1716 -4.2426,0 L 24,38.0001" style="stroke:#2f80ed;stroke-width:4;stroke-linecap:round;stroke-linejoin:round" id="path900" />
+	<path d="M 24,61.0001 H 56" style="stroke:#56ccf2;stroke-width:4;stroke-linecap:round" id="path902" />
 </svg>

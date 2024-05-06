@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Quahl Icons Overview</title>
+        <style>
+            body {
+                font-family: sans-serif;
+                padding:2em;
+            }
+            table {
+                border-collapse: collapse;
+            }
+            th, td {
+                font-size: 100%;
+                font-weight: normal;
+                text-align: left;
+                border: 1px solid lightgray;
+                min-width: 7em;
+                padding: 3px;
+            }
+            th {
+                border-bottom-color: gray;
+                background: #eee;
+                padding-top: 0.5ex;
+                padding-bottom: 0.5ex;
+            }
+            #iconListView img {
+                height: 40px;
+                width: 40px;
+            }
+            details {
+                margin-bottom: 1em;
+            }
+            .icon {
+                text-align: center;
+            }
+            .dark {
+                color: #f9f9f9;
+                background: #090909;
+            }
+            th.dark {
+                background-color: #333;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Quahl Browser Icon Set</h1>
+        <p>
+            The Quahl icon set comes in three styles with two variants each:
+        </p>
+        <ol>
+            <li>
+                <b>Color:</b>
+                <ul>
+                    <li>Full colour icon: <code>./color/[icon-name]<b>_c</b>.svg</code></li>
+                    <li>Greyed-out icon: <code>./color/[icon_name]<b>_g</b>.svg</code>
+                </ul>
+                Suitable for both light and dark mode UIs. To be used primarly for window
+                icons and primary tool bars.
+            </li>
+            <li>
+                <b>Light-mode Outlines:</b>
+                <ul>
+                    <li>Black outline icon: <code>./outline/[icon-name]<b>_o</b>.svg</code></li>
+                    <li>Greyed-out outline icon: <code>./outline/[icon_name]<b>_o50</b>.svg</code>
+                </ul>
+                Suitable only for <em>light mode</em> UIs. To be used in context menus,
+                subordinate tool bars, etc. &mdash; everywhere were the full colour icons
+                might be distracting otherwise.
+            </li>
+            <li>
+                <b>Dark-mode Outlines:</b>
+                <ul>
+                    <li>White outline icon: <code>./darko/[icon-name]<b>_d</b>.svg</code></li>
+                    <li>Greyed-out outline icon: <code>./darko/[icon_name]<b>_d50</b>.svg</code>
+                </ul>
+                Suitable only for <em>dark mode</em> UIs. To be used in context menus,
+                subordinate tool bars, etc. &mdash; everywhere were the full colour icons
+                might be distracting otherwise.
+            </li>
+        </ol>
+        <p>
+            In general, the full colour / full outline variants are used for <em>active</em> control
+            states (e.g. accepting input), and the greyed-out variants for
+            <em>inactive</em>/<em>off</em>/<em>disabled</em> states (e.g. not accepting input).
+        </p>
+        <p>
+            To use the icons from Python, import <code>Icons</code> and/or <code>OutlineIcons</code>
+            from <code>quahl.browser.resources</code>. <code>Icons</code> contains
+            <code>QIcon</code> objects for the Color style, while <code>OutlineIcons</code> contains
+            the Light-mode Outlines and the Dark-mode Outlines, automatically showing the appropriate
+            style based on the user&apos;s colour scheme.
+        </p>
+        <p>
+            New icons can normally be added by giving just the <code>_c</code>, <code>_g</code> and
+            <code>o</code> variants. There are some included scripts which attempt to automatically
+            derive the other styles and variants from these. Where that doesn't work, they should
+            be created manually and added as an exception to the appropriate script, with an 
+            additional <code>*.bak.svg</code> copy included alongside it.
+        </p>
+        <p>
+            This icon set is largley based on (and/or inspired by) Goran
+            Spasojevic&apos;s <em><a href="https://glyphs.fyi">Glyphs</a></em>.
+            <br>
+            The full colour style is based on Glyphs&apos;s <i>poly</i> variant,
+            the greyed-out varant for the color style on the <i>duo</i> variant
+            (with <code>rgba(127, 127, 127, 1.0)</code> for stroke and
+            <code>rgba(200, 200, 200, 0.25)</code> for the fill),
+            and the outline styles and variants on the <i>path</i> variant
+            (with <code>rgba(0, 0, 0, 1.0)</code> for the <code>4px</code>
+            stroke of the black outline, reducing stroke to <code>1px</code>
+            and setting opacity to <code>0.5</code> for the greyed-out
+            outlines, and inverting the palette for the dark-mode outlines).
+        </p>
+        <p>
+            The table below shows each icon style and variant against light and dark backgrounds
+            (of course, the outlines are only shown against the appropriate background), and gives
+            the icon name/descriptor as well as the alias by which these are accessed in Python
+            with the <code>Icons</code> and <code>OutlineIcons</code> classes.
+        </p>
+        <details>
+            <summary>Original <em>Glyphs</em> License: MIT License</summary>
+            <pre>
+MIT License
+
+Copyright (c) 2018
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+            </pre>
+        </details>
+        <table>
+            <thead>
+                <th><code>Icons.<i>Alias</i></code></th>
+                <th>Descriptor</th>
+                <th class="icon">Color: Full</th>
+                <th class="icon">Color: Grey</th>
+                <th class="icon">Black Outline: Full</th>
+                <th class="icon">Black Outline: Grey</th>
+                <th class="icon dark">Color: Full</th>
+                <th class="icon dark">Color: Grey</th>
+                <th class="icon dark">White Outline: Full</th>
+                <th class="icon dark">White Outline: Grey</th>
+            </thead>
+            <tbody id="iconListView">
+
+            </tbody>
+        </table>
+        <script>
+            const iconList = [
+                ['App',         'app'],
+                ['Download',    'arrow-end-down'],
+                ['OpenExtern',  'arrow-external-diag'],
+                ['OpenIntern',  'arrow-level-diag'],
+                ['',            'arrow-level-up'],
+                ['Back',        'arrow-lg-left'],
+                ['Forward',     'arrow-lg-right'],
+                ['',            'arrow-long-up'],
+                ['Undo',        'arrow-u-turn-left'],
+                ['Redo',        'arrow-u-turn-right'],
+                ['',            'arrow-u-turn-up'],
+                ['Downloads',   'arrow-solid-bracket-end-down'],
+                ['Reload',      'arrows-round'],
+                ['Crash',       'car-crash'],
+                ['Cli',         'cli'],
+                ['CliHost',     'cli-laptop'],
+                ['Code',        'code'],
+                ['CodeHost',    'code-laptop'],
+                ['Copy',        'copy'],
+                ['',            'copy-arrow'],
+                ['CopyFile',    'copy-file'],
+                ['CopyLink',    'copy-link'],
+                ['Edit',        'edit'],
+                ['Warning',     'exclamation-triangle'],
+                ['File',        'file'],
+                ['Folder',      'folder'],
+                ['FolderOpen',  'folder-open'],
+                ['',            'glasses'],
+                ['Information', 'info-circle'],
+                ['Link',        'link'],
+                ['Paste',       'paste'],
+                ['MediaPause',  'pause-circle'],
+                ['MediaPlay',   'play-circle'],
+                ['Browser',     'quahl'],
+                ['Question',    'question-circle'],
+                ['Loop/Repeat', 'repeat'],
+                ['Save',        'save'],
+                ['Cut',         'scissors-open'],
+                ['Certificate', 'scroll'],
+                ['CertificateWarning', 'scroll-exclamation'],
+                ['Controls',    'sliders'],
+                ['MediaStop',   'stop-circle'],
+                ['Stop',        'stop-hand'],
+                ['',            'times'],
+                ['Delete',      'trash'],
+                ['Unlink',      'unlink'],
+                ['Remove/Clear','x'],
+                ['Error',       'x-circle'],
+            ];
+            const iconListView = document.getElementById('iconListView');
+            for(const icon of iconList) {
+                let iconAlias = '';
+                if (icon[0]) {
+                    iconAlias = `Icons.${icon[0]}`;
+                }
+                const iconDesc = icon[1];
+                const iconC =    `./color/${iconDesc}_c.svg`;
+                const iconG =    `./color/${iconDesc}_g.svg`;
+                const iconO =    `./outline/${iconDesc}_o.svg`;
+                const iconO50 =  `./outline/${iconDesc}_o50.svg`;
+                const iconD =    `./darko/${iconDesc}_d.svg`;
+                const iconD50 =  `./darko/${iconDesc}_d50.svg`;
+                const row = `
+                <tr>
+                    <td><code>${iconAlias}</code></td>
+                    <td>${iconDesc}</td>
+                    <td class="icon"><img src="${iconC}"></td>
+                    <td class="icon"><img src="${iconG}"></td>
+                    <td class="icon"><img src="${iconO}"></td>
+                    <td class="icon"><img src="${iconO50}"></td>
+                    <td class="icon dark"><img src="${iconC}"></td>
+                    <td class="icon dark"><img src="${iconG}"></td>
+                    <td class="icon dark"><img src="${iconD}"></td>
+                    <td class="icon dark"><img src="${iconD50}"></td>
+                </tr>\n`;
+                iconListView.innerHTML += row;
+            }
+        </script>
+    </body>
+</html>
