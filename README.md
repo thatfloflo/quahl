@@ -1,4 +1,4 @@
-# The Quahl Web Browser ![Quahl Icon](./quahl/browser/resources/quahl_icon_32.png)
+# The Quahl Web Browser ![](./quahl/browser/resources/icons/quahl/quahl_24.png)
 
 *Quahl* (pronounded like the German word *Qual* [kva:l] 'torment') is a very simple,
 customisable and embeddable, web browser based on Qt's QWebEngine wrapper around
@@ -22,6 +22,23 @@ well, that any bugs will be fixed, or that anything is stable (both in terms of
 code/interfaces and execution!). Documentation will be forthcoming once some
 other things have been sorted (and when/if I find the time).
 
+## What Quahl is about
+
+- A simple, usable Web Browser / WebView component
+- Good integration / embedding with other Python apps
+- Highly customizable and configurable
+- Controllable from other processes via ICP over local TCP socket
+- Cross-platform: Windows, MacOS, Linux
+- A packagable alternative to Chromium's `--app` mode
+- Free and open source
+
+## What Quahl is not about
+
+- A fully-featured Web Browser
+- A thing for your daily web-browsing needs
+- Tabbed browsing or advanced features
+- Mobile platforms: not made for Android, iOS, etc.
+
 ## License
 
 I haven't fully decided on the license for this yet, but it's available under the
@@ -31,6 +48,6 @@ something else might be better, feel free to let me know.
 ## Acknowledgments
 
 The default icon set for Quahl is based on [Goran Spasojevic](https://github.com/gorango)'s
-[Glyphs](https://glyphs.fyi/). For more on the icons see the [index of icons](https://html-preview.github.io/?url=https://github.com/thatfloflo/quahl/blob/main/quahl/browser/resources/index_of_icons.html).
+[Glyphs](https://glyphs.fyi/). For more on the icons see the [index of icons](https://html-preview.github.io/?url=https://github.com/thatfloflo/quahl/blob/main/quahl/browser/resources/icons/index_of_icons.html).
 
 Some inspiration (but no code or resources) has been taken from Qt's [WebEngine Widgets Simple Browser Example](https://doc.qt.io/qt-6/qtwebengine-webenginewidgets-simplebrowser-example.html).
