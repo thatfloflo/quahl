@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="80"
+   height="80"
+   viewBox="0 0 80 80"
+   fill="none"
+   version="1.1"
+   id="svg3215"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs3219" />
+  <path
+     d="M 68,40 C 68,55.464 55.464,68 40,68 24.536,68 12,55.464 12,40 12,24.536 24.536,12 40,12 55.464,12 68,24.536 68,40 Z"
+     stroke="#3d3321"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path3209"
+     style="stroke:#ffffff;stroke-width:1;stroke-dasharray:none;stroke-opacity:0.5" />
+  <path
+     d="M 55.55635,55.55635 24.44365,24.44365"
+     stroke="#3d3321"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path755"
+     style="stroke:#ffffff;stroke-width:1;stroke-opacity:0.5" />
+  <path
+     d="m 24.44365,55.55635 31.1127,-31.1127"
+     stroke="#3d3321"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path757"
+     style="stroke:#ffffff;stroke-width:1;stroke-opacity:0.5" />
+</svg>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="80"
+   height="80"
+   viewBox="0 0 80 80"
+   fill="none"
+   version="1.1"
+   id="svg4495"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs4499" />
+  <path
+     d="m 29.4986,61.8651 c -1.9329,3.348 -6.2141,4.4951 -9.5621,2.5621 -3.3481,-1.933 -4.4952,-6.2141 -2.5622,-9.5621 l 1,-1.7321 c 1.933,-3.348 6.2141,-4.4952 9.5622,-2.5622 3.348,1.933 4.4951,6.2142 2.5621,9.5622 z"
+     stroke="#3d3321"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path4485"
+     style="stroke:#ffffff;stroke-opacity:1;stroke-opacity:1;stroke-width:4" />
+  <path
+     d="m 31.8056,54.632 c -0.179,0.1352 -0.3796,0.2247 -0.587,0.2694 -0.2428,-0.9506 -0.684,-1.85 -1.3058,-2.631 L 37.9117,42.3028 55.0309,15.332 c 0.4268,-0.6726 1.305,-0.8942 1.9999,-0.5046 0.6948,0.3895 0.964,1.2543 0.613,1.9694 L 43.5112,45.5877 c -0.1035,0.2108 -0.255,0.3944 -0.4424,0.5359 z"
+     stroke="#3d3321"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path4487"
+     style="stroke:#ffffff;stroke-opacity:1;stroke-opacity:1;stroke-width:4" />
+  <path
+     d="m 50.5012,61.8651 c 1.933,3.348 6.2142,4.4951 9.5622,2.5621 3.3481,-1.933 4.4952,-6.2141 2.5622,-9.5621 l -1,-1.7321 c -1.933,-3.348 -6.2141,-4.4952 -9.5622,-2.5622 -3.348,1.933 -4.4951,6.2142 -2.5622,9.5622 z"
+     stroke="#3d3321"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path4489"
+     style="stroke:#ffffff;stroke-opacity:1;stroke-opacity:1;stroke-width:4" />
+  <path
+     d="M 39.9998,39.0128 24.9688,15.332 c -0.4269,-0.6726 -1.305,-0.8942 -1.9999,-0.5046 -0.6949,0.3895 -0.964,1.2543 -0.613,1.9694 l 13.6722,27.853 m 3.9717,3.7921 8.1942,6.1901 c 0.1791,0.1352 0.3797,0.2246 0.5871,0.2694 0.2428,-0.9506 0.684,-1.85 1.3057,-2.631 l -6.1153,-7.6206"
+     stroke="#3d3321"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path4491"
+     style="stroke:#ffffff;stroke-opacity:1;stroke-opacity:1;stroke-width:4" />
+  <path
+     fill-rule="evenodd"
+     clip-rule="evenodd"
+     d="m 39.5002,42.8108 c -0.4783,0.2761 -0.6422,0.8877 -0.3661,1.366 0.2762,0.4783 0.8878,0.6422 1.3661,0.366 0.4783,-0.2761 0.6421,-0.8877 0.366,-1.366 -0.2761,-0.4783 -0.8877,-0.6422 -1.366,-0.366 z"
+     stroke="#3d3321"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="path4493"
+     style="stroke:#ffffff;stroke-opacity:1;stroke-opacity:1;stroke-width:4" />
+</svg>

@@ -1,9 +1,53 @@
 from importlib import resources
 from typing import Final
+from copy import copy
 
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import Qt, Slot
+from PySide6.QtGui import QIcon, QGuiApplication
 
 NEW_WINDOW_PAGE_HTML: Final[str] = resources.read_text(__package__, "new_window_page.html")
+
+
+class InvertableIcon(QIcon):
+
+    _light: QIcon
+    _dark: QIcon
+    _active_color_scheme: Qt.ColorScheme
+
+    def __init__(self, light_icon: QIcon, dark_icon: QIcon):
+        super().__init__()
+        self._light = light_icon
+        self._dark = dark_icon
+        style_hints = QGuiApplication.styleHints()
+        style_hints.colorSchemeChanged.connect(self._handle_color_scheme_changed)
+        self._active_color_scheme = style_hints.colorScheme()
+        self.update_active_icon()
+
+    def get_light_variant(self) -> QIcon:
+        return self._light
+
+    def get_dark_variant(self) -> QIcon:
+        return self._dark
+
+    def set_light_variant(self, icon: QIcon):
+        self._light = icon
+        self.update_active_icon()
+
+    def set_dark_variant(self, icon: QIcon):
+        self._dark = icon
+        self.update_active_icon()
+
+    def update_active_icon(self):
+        if self._active_color_scheme == Qt.Dark:
+            self.swap(copy(self._dark))
+        else:
+            self.swap(copy(self._light))
+
+    @Slot()
+    def _handle_color_scheme_changed(self):
+        style_hints = QGuiApplication.styleHints()
+        self._active_color_scheme = style_hints.colorScheme()
+        self.update_active_icon()
 
 
 def load_icon(icon_name: str) -> QIcon:
@@ -16,11 +60,17 @@ def load_icon(icon_name: str) -> QIcon:
 
 
 def load_icon_outline(icon_name: str) -> QIcon:
-    icon = QIcon()
+    light = QIcon()
+    dark = QIcon()
     with resources.path(__package__, f"icon_{icon_name}_outline.svg") as path:
-        icon.addFile(str(path))
+        light.addFile(str(path))
+    with resources.path(__package__, f"icon_{icon_name}_outline_d.svg") as path:
+        dark.addFile(str(path))
     with resources.path(__package__, f"icon_{icon_name}_outline50.svg") as path:
-        icon.addFile(str(path), mode=QIcon.Disabled)
+        light.addFile(str(path), mode=QIcon.Disabled)
+    with resources.path(__package__, f"icon_{icon_name}_outline50_d.svg") as path:
+        dark.addFile(str(path), mode=QIcon.Disabled)
+    icon = InvertableIcon(light, dark)
     return icon
 
 

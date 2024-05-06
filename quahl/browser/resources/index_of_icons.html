@@ -27,11 +27,15 @@
                 height: 40px;
                 width: 40px;
             }
-            #iconListView .icon {
-                text-align: center;
-            }
             details {
                 margin-bottom: 1em;
+            }
+            .icon {
+                text-align: center;
+            }
+            .dark {
+                color: #f9f9f9;
+                background: #090909;
             }
         </style>
     </head>
@@ -71,10 +75,14 @@ SOFTWARE.
             <thead>
                 <th><code>Icons.<i>Alias</i></code></th>
                 <th>Descriptor</th>
-                <th class="icon">Colour</th>
-                <th class="icon">Grey</th>
-                <th class="icon">Outline</th>
-                <th class="icon">Outline50</th>
+                <th class="icon">colour</th>
+                <th class="icon">grey</th>
+                <th class="icon">outline</th>
+                <th class="icon">outline50</th>
+                <th class="icon dark">colour</th>
+                <th class="icon dark">grey</th>
+                <th class="icon dark">outline_d</th>
+                <th class="icon dark">outline50_d</th>
             </thead>
             <tbody id="iconListView">
 
@@ -142,6 +150,8 @@ SOFTWARE.
                 const iconGre = `icon_${iconDesc}_grey.svg`;
                 const iconOut = `icon_${iconDesc}_outline.svg`;
                 const iconO50 = `icon_${iconDesc}_outline50.svg`;
+                const iconOutD = `icon_${iconDesc}_outline_d.svg`;
+                const iconO50D = `icon_${iconDesc}_outline50_d.svg`;
                 const row = `
                 <tr>
                     <td><code>${iconAlias}</code></td>
@@ -150,6 +160,10 @@ SOFTWARE.
                     <td class="icon"><img src="${iconGre}"></td>
                     <td class="icon"><img src="${iconOut}"></td>
                     <td class="icon"><img src="${iconO50}"></td>
+                    <td class="icon dark"><img src="${iconCol}"></td>
+                    <td class="icon dark"><img src="${iconGre}"></td>
+                    <td class="icon dark"><img src="${iconOutD}"></td>
+                    <td class="icon dark"><img src="${iconO50D}"></td>
                 </tr>\n`;
                 iconListView.innerHTML += row;
             }
