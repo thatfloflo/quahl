@@ -1,53 +1,129 @@
 from importlib import resources
-from typing import Final
-from copy import copy
+from typing import Final, List
 
-from PySide6.QtCore import Qt, Slot
-from PySide6.QtGui import QIcon, QGuiApplication
+from PySide6.QtCore import QSize, Qt, Slot, QRect
+from PySide6.QtGui import QWindow, QIcon, QIconEngine, QGuiApplication, QPixmap, QPainter
 
 NEW_WINDOW_PAGE_HTML: Final[str] = resources.read_text(__package__, "new_window_page.html")
 
 
-class InvertableIcon(QIcon):
+class ColorSchemeSensitiveIconEngine(QIconEngine):
 
-    _light: QIcon
-    _dark: QIcon
     _active_color_scheme: Qt.ColorScheme
 
     def __init__(self, light_icon: QIcon, dark_icon: QIcon):
         super().__init__()
-        self._light = light_icon
-        self._dark = dark_icon
+        self._light_icon = light_icon
+        self._dark_icon = dark_icon
+        self._active_color_scheme = Qt.Unknown
         style_hints = QGuiApplication.styleHints()
-        style_hints.colorSchemeChanged.connect(self._handle_color_scheme_changed)
-        self._active_color_scheme = style_hints.colorScheme()
-        self.update_active_icon()
+        style_hints.colorSchemeChanged.connect(self._update_color_scheme)
 
-    def get_light_variant(self) -> QIcon:
-        return self._light
+    def set_light_icon(self, icon: QIcon):
+        self._light_icon = icon
 
-    def get_dark_variant(self) -> QIcon:
-        return self._dark
+    def set_dark_icon(self, icon: QIcon):
+        self._dark_icon = icon
 
-    def set_light_variant(self, icon: QIcon):
-        self._light = icon
-        self.update_active_icon()
+    def get_light_icon(self):
+        return self._light_icon
 
-    def set_dark_variant(self, icon: QIcon):
-        self._dark = icon
-        self.update_active_icon()
+    def get_dark_icon(self):
+        return self._dark_icon
 
-    def update_active_icon(self):
+    def get_active_icon(self):
         if self._active_color_scheme == Qt.Dark:
-            self.swap(copy(self._dark))
-        else:
-            self.swap(copy(self._light))
+            return self._dark_icon
+        return self._light_icon
+
+    def pixmap(self, size: QSize, mode: QIcon.Mode, state: QIcon.State) -> QPixmap:
+        active_icon = self.get_active_icon()
+        return active_icon.pixmap(size, mode, state)
+
+    def paint(
+            self,
+            painter: QPainter,
+            rect: QRect,
+            mode: QIcon.Mode,
+            state: QIcon.State) -> QPixmap:
+        active_icon = self.get_active_icon()
+        return active_icon.paint(painter, rect, mode, state)
 
     @Slot()
-    def _handle_color_scheme_changed(self):
+    def _update_color_scheme(self):
         style_hints = QGuiApplication.styleHints()
         self._active_color_scheme = style_hints.colorScheme()
-        self.update_active_icon()
+
+
+class ColorSchemeSensitiveIcon(QIcon):
+
+    _engine: ColorSchemeSensitiveIconEngine
+
+    def __init__(self, light_icon: QIcon, dark_icon: QIcon):
+        self._engine = ColorSchemeSensitiveIconEngine(light_icon, dark_icon)
+        super().__init__(self._engine)
+
+    def set_light_icon(self, icon: QIcon):
+        self._engine.set_light_icon(icon)
+
+    def set_dark_icon(self, icon: QIcon):
+        self._engine.set_dark_icon(icon)
+
+    def get_light_icon(self):
+        return self._engine.get_light_icon()
+
+    def get_dark_icon(self):
+        return self._engine.get_dark_icon()
+
+    def actualSize(
+            self,
+            window: QWindow,
+            size: QSize,
+            mode: QIcon.Mode = QIcon.Normal,
+            state: QIcon.State = QIcon.Off) -> QSize:
+        return self._engine.get_active_icon().actualSize(window, size, mode, state)
+
+    def availableSizes(
+            self,
+            mode: QIcon.Mode = QIcon.Normal,
+            state: QIcon.State = QIcon.Off) -> List[QSize]:
+        return self._engine.get_active_icon().availableSizes(mode, state)
+
+    def cacheKey(self) -> int:
+        return self._engine.get_active_icon().cacheKey()
+
+    def isMask(self) -> bool:
+        return self._engine.get_active_icon().isMask()
+
+    def isNull(self) -> bool:
+        return self._engine.get_active_icon().isNull()
+
+    def name(self) -> str:
+        return self._engine.get_active_icon().name()
+
+    def addFile(self, *args, **kwargs):
+        raise RuntimeError(
+            f"{self.__class__.__name__} does not support addFile() directly: "
+            "use set|get_light|dark_icon() instead"
+        )
+
+    def addPixmap(self, *args, **kwargs):
+        raise RuntimeError(
+            f"{self.__class__.__name__} does not support addPixmap() directly: "
+            "use set|get_light|dark_icon() instead"
+        )
+
+    def setIsMask(self, *args, **kwargs):
+        raise RuntimeError(
+            f"{self.__class__.__name__} does not support setIsMask() directly: "
+            "use set|get_light|dark_icon() instead"
+        )
+
+    def swap(self, *args, **kwargs):
+        raise RuntimeError(
+            f"{self.__class__.__name__} does not support swap() directly: "
+            "use set|get_light|dark_icon() instead"
+        )
 
 
 def load_icon(icon_name: str) -> QIcon:
@@ -70,7 +146,7 @@ def load_icon_outline(icon_name: str) -> QIcon:
         light.addFile(str(path), mode=QIcon.Disabled)
     with resources.path(__package__, f"icon_{icon_name}_outline50_d.svg") as path:
         dark.addFile(str(path), mode=QIcon.Disabled)
-    icon = InvertableIcon(light, dark)
+    icon = ColorSchemeSensitiveIcon(light, dark)
     return icon
 
 
