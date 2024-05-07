@@ -1,6 +1,27 @@
 from PySide6.QtCore import Qt, QObject, Signal, Slot, QTimer, QUrl
 from PySide6.QtGui import QFocusEvent, QGuiApplication
-from PySide6.QtWidgets import QLineEdit, QCompleter
+from PySide6.QtWidgets import QLineEdit, QCompleter, QWidget, QMainWindow
+
+from .profile import BrowserProfile
+
+
+class UrlCompleter(QCompleter):
+
+    _profile: BrowserProfile | None
+
+    def __init__(self, parent: QObject | None = None):
+        self._profile = None
+        if isinstance(parent, QWidget) and isinstance(parent.window(), QMainWindow):
+            window = parent.window()
+            if hasattr(window, "profile") and isinstance(window.profile, BrowserProfile):
+                self._profile = window.profile
+        if self._profile:
+            super().__init__(self._profile.suggestion_model, parent)
+            self.setCaseSensitivity(Qt.CaseInsensitive)
+            self.setFilterMode(Qt.MatchContains)
+        else:
+            super().__init__(parent)
+
 
 class UrlEdit(QLineEdit):
 
@@ -30,14 +51,7 @@ class UrlEdit(QLineEdit):
         self.textChanged.connect(self._handle_text_changed)
         self.textEdited.connect(self._handle_text_edited)
 
-        url_list = [
-            "https://www.google.com",
-            "https://www.florian.me.uk/",
-            "https://github.com/thatfloflo/quahl/",
-        ]
-        self._completer = QCompleter(url_list, self)
-        self._completer.setCaseSensitivity(Qt.CaseInsensitive)
-        self._completer.setFilterMode(Qt.MatchContains)
+        self._completer = UrlCompleter(self)
         self.setCompleter(self._completer)
 
     @Slot()
@@ -47,7 +61,6 @@ class UrlEdit(QLineEdit):
     @Slot()
     def _handle_palette_change2(self):
         print("Pallette change 2 handler!")
-
 
     def focusInEvent(self, event: QFocusEvent):
         if not self._user_editing_in_progress:
@@ -78,10 +91,3 @@ class UrlEdit(QLineEdit):
     def _reset_view(self):
         self._user_editing_in_progress = False
         self.setCursorPosition(0)
-
-    # def changeEvent(self, event: QEvent):
-    #     if event.type() == QEvent.ApplicationPaletteChange:
-    #         print("AppPalChange on UrlLineEdit")
-    #         self.setStyleSheet(self.styleSheet())
-    #     super().changeEvent(event)
-        

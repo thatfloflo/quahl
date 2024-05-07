@@ -11,9 +11,11 @@ class WebPage(QWebEnginePage):
 
     def __init__(self, profile: BrowserProfile, parent: QObject):
         super().__init__(profile, parent)
+        self._profile = profile
         self.renderProcessPidChanged.connect(self.on_render_process_pid_change)
         self.renderProcessTerminated.connect(self.on_render_process_terminated)
         self.certificateError.connect(self._handle_certificate_error)
+        self.loadFinished.connect(self._handle_load_finished)
 
     @Slot(QWebEngineCertificateError)
     def _handle_certificate_error(self, error: QWebEngineCertificateError):
@@ -68,3 +70,8 @@ class WebPage(QWebEnginePage):
                 window.notify(Icons.Crash, short_msg)
         print("ERROR:", message)
         self.triggerAction(QWebEnginePage.Reload)
+
+    @Slot(bool)
+    def _handle_load_finished(self, ok: bool):
+        if ok:
+            self._profile.suggestion_model.add_url(self.url())
