@@ -313,7 +313,7 @@ class BrowserWindow(QMainWindow):
 
     @property
     def url_edit(self) -> UrlEdit:
-        """Return the `BrowserWindow`s URL line edit widget."""
+        """Return the window's URL line edit widget."""
         return self._url_edit
 
     @property

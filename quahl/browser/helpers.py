@@ -3,6 +3,7 @@ import platform
 import subprocess
 import math
 import enum
+import sys
 from functools import wraps
 from typing import Callable, Any, Self
 
@@ -12,11 +13,15 @@ from PySide6.QtCore import Signal, Slot, QRect
 
 
 class OS(enum.IntFlag):
+    """Enum for basic operating system information."""
 
     UNKNOWN = enum.auto()
     WINDOWS = enum.auto()
     LINUX = enum.auto()
     MACOS = enum.auto()
+
+    BIT_WIDTH_32 = enum.auto()
+    BIT_WIDTH_64 = enum.auto()
 
     @classmethod
     def __detect_os(cls):
@@ -31,22 +36,75 @@ class OS(enum.IntFlag):
             cls._detected_os = cls.UNKNOWN
 
     @classmethod
+    def __detect_bit_width(cls):
+        if sys.maxsize > 2**32:
+            cls._detected_bit_width = cls.BIT_WIDTH_64
+        else:
+            cls._detected_bit_width = cls.BIT_WIDTH_32
+
+    @classmethod
     def detected(cls) -> Self:
+        """Returns the host's detected operating system and bit width.
+
+        The host's operating system is detected based on the value returned
+        by the built-in :code:`platform.system()` call. Bit width is determined
+        by testing whether :code:`sys.maxsize` exceeds 2^32.
+
+        Use bitwise-and :code:`&` or the :code:`in` operator to test an `OS`
+        enum value with the returned value.
+        For example::
+
+            if OS.detected() & OS.MACOS:
+                print("You're the apple of my eye!")
+            elif OS.detected() & OS.WINDOWS:
+                print("Who drew the curtains?")
+
+        This is the same as::
+
+            if OS.MACOS in OS.detected():
+                print("You're the apple of my eye!")
+            elif OS.WINDOWS in OS.detected():
+                print("Who drew the curtains?")
+        """
         if not hasattr(cls, "_detected_os"):
             cls.__detect_os()
-        return cls._detected_os
+        if not hasattr(cls, "_detected_bit_width"):
+            cls.__detect_bit_width()
+        return cls._detected_os | cls._detected_bit_width
 
 
 class ClickableQWidget(QWidget):
+    """Utility `QWidget`-wrapper which emits a `clicked` signal on mouse clicks.
 
+    This widget can be inherited by other widgets, or used as a wrapper widget,
+    to become sensitive to mouse click events. If a mouse click is detected on
+    the (wrapped) widget, the `ClickableQWidget.clicked` signal is emitted.
+    """
+
+    #: Signal emitted when a mous click is detected anywhere on the wrapped widget.
     clicked: Signal = Signal(QWidget)
     __mouse_pressed: bool = False
 
     def mousePressEvent(self, event: QMouseEvent):
+        """Listener for mouse press events.
+
+        Internally records when a mouse press event is recorded anywhere on the
+        (wrapped) widget.
+        """
         super().mousePressEvent(event)
         self._mouse_pressed = True
 
     def mouseReleaseEvent(self, event: QMouseEvent):
+        """Listener for mouse release events.
+
+        Intercepts mouse release events and then checkes whether the mouse was
+        released within the bounds of the (wrapped) widget, and also whether
+        the original click occured within the bounds of the (wrapped) widget.
+
+        If both conditions have been met, it emits the `clicked` signal,
+        otherwise it resets the click-tracking state of the (wrapped) widget
+        without emitting the `clicked` signal.
+        """
         super().mouseReleaseEvent(event)
         click_pos = event.position()
         # Attn: Click poss on release might be outside the widget boundaries!

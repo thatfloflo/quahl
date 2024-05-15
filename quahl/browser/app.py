@@ -1,3 +1,4 @@
+"""Quahl Browser App Module."""
 from uuid import UUID, uuid4
 from typing import TYPE_CHECKING
 

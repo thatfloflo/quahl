@@ -1,3 +1,5 @@
+"""Inter-Process Communication for the Quahl Browser."""
+
 from typing import Any
 
 from PySide6.QtCore import QObject, QByteArray
@@ -7,6 +9,7 @@ from .jsonrpc import JSONRPCProvider
 
 
 class RPCInterface(JSONRPCProvider):
+    """Remote-Procedure-Call Interface for Quahl IPC."""
 
     def __init__(self):
         super().__init__()
@@ -29,6 +32,7 @@ class RPCInterface(JSONRPCProvider):
 
 
 class Server(QTcpServer):
+    """TCP Server for Quahl's IPC Interface."""
 
     interface: JSONRPCProvider
 
@@ -55,6 +59,7 @@ class Server(QTcpServer):
 
 
 class ConnectionHandler(QObject):
+    """Connection Handler for Quahl's TCP Server."""
 
     buffer: QByteArray = QByteArray()
 

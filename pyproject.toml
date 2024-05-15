@@ -2,7 +2,7 @@
 name = "quahl"
 version = "0.1.0"
 description = ""
-authors = ["Florian <florian@florian.me.uk>"]
+authors = ["Florian Breit <florian@florian.me.uk>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -12,6 +12,11 @@ pyside6 = "^6.7.0"
 
 [tool.poetry.group.dev.dependencies]
 flake8-pyproject = "^1.2.3"
+
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.3.7"
+sphinx-rtd-theme = "^2.0.0"
 
 [build-system]
 requires = ["poetry-core"]
